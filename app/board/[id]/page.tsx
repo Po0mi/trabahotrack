@@ -18,7 +18,6 @@ export default function BoardPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Security check: If they somehow lost their token, kick them out
     const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN);
     if (!token) {
       router.push("/");
@@ -39,6 +38,11 @@ export default function BoardPage() {
     fetchJobs();
   }, [boardId, router]);
 
+  // This function updates the UI instantly when a new job is added
+  const handleJobAdded = (newJob: Job) => {
+    setJobs((prevJobs) => [newJob, ...prevJobs]);
+  };
+
   return (
     <div className="board-page">
       <Navbar />
@@ -46,7 +50,7 @@ export default function BoardPage() {
         {isLoading ? (
           <div className="board-loading">Loading your workspace...</div>
         ) : (
-          <KanbanBoard jobs={jobs} />
+          <KanbanBoard jobs={jobs} onJobAdded={handleJobAdded} />
         )}
       </main>
     </div>
