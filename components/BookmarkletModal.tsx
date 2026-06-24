@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef, useEffect } from "react";
 import { generateBookmarklet } from "@/lib/bookmarklet";
 import "@/styles/components/modal.scss";
 
@@ -9,14 +10,30 @@ interface BookmarkletModalProps {
   boardUrl: string;
 }
 
-export default function BookmarkletModal({ isOpen, onClose, boardUrl }: BookmarkletModalProps) {
-  if (!isOpen) return null;
+export default function BookmarkletModal({
+  isOpen,
+  onClose,
+  boardUrl,
+}: BookmarkletModalProps) {
+  const linkRef = useRef<HTMLAnchorElement>(null);
 
   const href = generateBookmarklet(boardUrl);
 
+  // Bypass React's javascript: URL block by setting it imperatively after render
+  useEffect(() => {
+    if (linkRef.current) {
+      linkRef.current.href = href;
+    }
+  }, [href]);
+
+  if (!isOpen) return null;
+
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content modal-content--bookmarklet" onClick={(e) => e.stopPropagation()}>
+      <div
+        className="modal-content modal-content-bookmarklet"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="modal-header">
           <h2>Browser Bookmarklet</h2>
           <button className="modal-close" onClick={onClose} aria-label="Close">
@@ -26,13 +43,13 @@ export default function BookmarkletModal({ isOpen, onClose, boardUrl }: Bookmark
 
         <div className="bookmarklet-body">
           <p className="bookmarklet-desc">
-            Drag the button below to your browser&apos;s bookmarks bar. Then click it on any job
-            listing to instantly add it to this board.
+            Drag the button below to your browser&apos;s bookmarks bar. Then
+            click it on any job listing to instantly add it to this board.
           </p>
 
           <div className="bookmarklet-drag-zone">
             <a
-              href={href}
+              ref={linkRef}
               className="bookmarklet-link"
               onClick={(e) => e.preventDefault()}
               draggable
@@ -57,18 +74,20 @@ export default function BookmarkletModal({ isOpen, onClose, boardUrl }: Bookmark
           <div className="bookmarklet-sites">
             <p className="bookmarklet-sites-label">Works on</p>
             <div className="bookmarklet-sites-list">
-              {["LinkedIn", "Indeed", "Glassdoor", "+ most job boards"].map((s) => (
-                <span key={s} className="bookmarklet-site-chip">
-                  {s}
-                </span>
-              ))}
+              {["LinkedIn", "Indeed", "Glassdoor", "+ most job boards"].map(
+                (s) => (
+                  <span key={s} className="bookmarklet-site-chip">
+                    {s}
+                  </span>
+                ),
+              )}
             </div>
           </div>
         </div>
 
         <div className="modal-actions">
-          <button className="btn-primary" onClick={onClose}>
-            Done
+          <button className="btn-secondary" onClick={onClose}>
+            Close
           </button>
         </div>
       </div>
