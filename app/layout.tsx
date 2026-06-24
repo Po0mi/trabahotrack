@@ -19,7 +19,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "TrabahoTracker",
+  title: "TrabahoTrack",
   description:
     "A simple, no-login job application tracker with instant kanban boards.",
 };

@@ -39,7 +39,7 @@ export default function Navbar() {
             className="navbar-logo-img"
             priority
           />
-          <span className="navbar-title">TrabahoTracker</span>
+          <span className="navbar-title">TrabahoTrack</span>
         </div>
 
         <div className="navbar-actions">
@@ -67,7 +67,10 @@ export default function Navbar() {
         </div>
       </nav>
 
-      <SyncToPhoneModal isOpen={isSyncOpen} onClose={() => setIsSyncOpen(false)} />
+      <SyncToPhoneModal
+        isOpen={isSyncOpen}
+        onClose={() => setIsSyncOpen(false)}
+      />
     </>
   );
 }

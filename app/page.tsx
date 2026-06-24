@@ -52,7 +52,7 @@ export default function LandingPage() {
           />
         </div>
 
-        <h1 className="landing-title">TrabahoTracker</h1>
+        <h1 className="landing-title">TrabahoTrack</h1>
         <p className="landing-subtitle">
           Track your job applications in one simple board. No account needed,
           just a link.
