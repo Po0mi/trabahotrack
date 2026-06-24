@@ -1,4 +1,5 @@
 :root {
+  color-scheme: light;
   /* Surface */
   --bg: #f7f8fa;
   --surface: #ffffff;
@@ -70,6 +71,7 @@
 }
 
 [data-theme="dark"] {
+  color-scheme: dark;
   /* Surface */
   --bg: #0d0f18;
   --surface: #141721;

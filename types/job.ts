@@ -7,6 +7,7 @@ export interface Job {
   role: string;
   status: JobStatus;
   job_url?: string | null;
+  salary?: string | null;
   notes?: string | null;
   created_at: string;
 }

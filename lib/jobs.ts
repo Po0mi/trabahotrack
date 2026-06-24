@@ -33,6 +33,7 @@ export const jobsApi = {
       p_role: jobData.role.trim(),
       p_status: jobData.status || "Applied",
       p_job_url: jobData.job_url?.trim() || null,
+      p_salary: jobData.salary?.trim() || null,
       p_notes: jobData.notes?.trim() || null,
     });
 
@@ -75,6 +76,7 @@ export const jobsApi = {
       p_role: jobData.role.trim(),
       p_status: jobData.status,
       p_job_url: jobData.job_url?.trim() || null,
+      p_salary: jobData.salary?.trim() || null,
       p_notes: jobData.notes?.trim() || null,
     });
     if (error) throw new Error(error.message);

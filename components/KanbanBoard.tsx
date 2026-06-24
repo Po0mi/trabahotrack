@@ -67,6 +67,8 @@ export default function KanbanBoard({
     }
   });
 
+  const [successPulseStatus, setSuccessPulseStatus] = useState<string | null>(null);
+
   const searchRef = useRef<HTMLInputElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
   const handleDropRef = useRef<(jobId: string, status: string) => void>(() => {});
@@ -213,6 +215,16 @@ export default function KanbanBoard({
   }
   const topRejectionStage = Object.entries(rejectionStageCounts).sort((a, b) => b[1] - a[1])[0];
 
+  // Motivational tagline
+  const motivationalTagline = (() => {
+    if (total === 0) return "Start tracking. Stay consistent.";
+    if (offerCount > 0) return "You're close. Don't stop.";
+    if (interviewCount > 0) return "Follow up today.";
+    if (ghostingCount > 2) return "Don't lose momentum.";
+    if (rejectionCount > 5) return "Every rejection is data.";
+    return "Stay consistent.";
+  })();
+
   // Filtered jobs (search + tag filter)
   const q = searchQuery.trim().toLowerCase();
   const filteredJobs = jobs
@@ -261,11 +273,22 @@ export default function KanbanBoard({
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [handleKeyDown]);
 
+  const MOVE_TOASTS: Record<string, string> = {
+    Interview: "Interview locked in. Follow up!",
+    Offer: "Offer incoming. You've earned it.",
+    Rejected: "Noted. Keep going.",
+    Ghosted: "Filed. Don't let it slow you.",
+  };
+
   const handleDrop = async (jobId: string, newStatus: string) => {
     const jobToUpdate = jobs.find((j) => j.id === jobId);
     if (!jobToUpdate || jobToUpdate.status === newStatus) return;
     onStatusChange(jobId, newStatus as JobStatus);
 
+    if (newStatus === "Interview" || newStatus === "Offer") {
+      setSuccessPulseStatus(newStatus);
+      setTimeout(() => setSuccessPulseStatus(null), 1500);
+    }
 
     try {
       await jobsApi.updateJobStatus(
@@ -274,7 +297,7 @@ export default function KanbanBoard({
         jobId,
         newStatus as JobStatus,
       );
-      toast(`Moved to ${newStatus}`);
+      toast(MOVE_TOASTS[newStatus] ?? `Moved to ${newStatus}`);
     } catch (error) {
       console.error("Failed to update status", error);
       toast("Failed to move job. Please try again.", "error");
@@ -290,13 +313,13 @@ export default function KanbanBoard({
 
   // Export as CSV
   const handleExport = () => {
-    const headers = ["company", "role", "status", "job_url", "notes", "created_at"];
+    const headers = ["company", "role", "status", "job_url", "salary", "notes", "created_at"];
     const escape = (val: string | null | undefined) => {
       const s = val ?? "";
       return `"${s.replace(/"/g, '""')}"`;
     };
     const rows = jobs.map((j) =>
-      [j.company, j.role, j.status, j.job_url, j.notes, j.created_at]
+      [j.company, j.role, j.status, j.job_url, j.salary, j.notes, j.created_at]
         .map((v) => escape(v as string | null | undefined))
         .join(","),
     );
@@ -374,7 +397,10 @@ export default function KanbanBoard({
     <>
       {/* Header row */}
       <div className="kanban-header">
-        <h1 className="kanban-title">My Applications</h1>
+        <div className="kanban-title-wrap">
+          <h1 className="kanban-title">My Applications</h1>
+          <span className="kanban-tagline">{motivationalTagline}</span>
+        </div>
         <div className="kanban-actions">
           <input
             ref={importRef}
@@ -415,22 +441,32 @@ export default function KanbanBoard({
       <div className="stats-bar">
         <div className="stat-card">
           <span className="stat-value">{total}</span>
-          <span className="stat-label">Total</span>
+          <span className="stat-label">
+            <i className="fas fa-briefcase stat-label-icon" />
+            Total
+          </span>
         </div>
         <div className="stat-divider" />
         <div className="stat-card">
           <span className="stat-value stat-value--interview">{interviewRate}%</span>
-          <span className="stat-label">Interview Rate</span>
+          <span className="stat-label">
+            <i className="fas fa-comments stat-label-icon" />
+            Interview Rate
+          </span>
         </div>
         <div className="stat-divider" />
         <div className="stat-card">
           <span className="stat-value stat-value--offer">{offerRate}%</span>
-          <span className="stat-label">Offer Rate</span>
+          <span className="stat-label">
+            <i className="fas fa-trophy stat-label-icon" />
+            Offer Rate
+          </span>
         </div>
         <div className="stat-divider" />
         <div className="stat-card">
           <span className="stat-value stat-value--rejected">{rejectionCount}</span>
           <span className="stat-label">
+            <i className="fas fa-circle-xmark stat-label-icon" />
             Rejections
             {topRejectionStage && (
               <span className="stat-insight" title={`Most common: ${topRejectionStage[0]}`}>
@@ -445,58 +481,60 @@ export default function KanbanBoard({
             {ghostingCount}
           </span>
           <span className="stat-label">
-            {ghostingCount > 0 ? "👀 Ghosting?" : "Ghosting Risk"}
+            <i className="fas fa-ghost stat-label-icon" />
+            {ghostingCount > 0 ? "Ghosting?" : "Ghosting Risk"}
           </span>
         </div>
       </div>
 
-      {/* Search */}
-      <div className="search-bar">
-        <i className="fas fa-magnifying-glass search-icon" />
-        <input
-          ref={searchRef}
-          className="search-input"
-          type="text"
-          placeholder="Filter by company, role, or notes…"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-        />
-        {searchQuery && (
-          <button className="search-clear" onClick={() => setSearchQuery("")} aria-label="Clear search">
-            <i className="fas fa-xmark" />
-          </button>
-        )}
-        <kbd className="search-kbd">/ to focus</kbd>
-      </div>
+      {/* Control bar: search + tag filters (sticky) */}
+      <div className="control-bar">
+        <div className="search-bar">
+          <i className="fas fa-magnifying-glass search-icon" />
+          <input
+            ref={searchRef}
+            className="search-input"
+            type="text"
+            placeholder="Filter by company, role, or notes…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button className="search-clear" onClick={() => setSearchQuery("")} aria-label="Clear search">
+              <i className="fas fa-xmark" />
+            </button>
+          )}
+          <kbd className="search-kbd">/ to focus</kbd>
+        </div>
 
-      {/* Tag filter bar */}
-      <div className="tag-filter-bar">
-        {JOB_TAGS.map((tag) => (
-          <button
-            key={tag.id}
-            className={`tag-filter-btn${activeTagFilter === tag.id ? " tag-filter-btn--active" : ""}${tagCounts[tag.id] === 0 ? " tag-filter-btn--empty" : ""}`}
-            style={{ "--tag-color": tag.color } as React.CSSProperties}
-            onClick={() =>
-              setActiveTagFilter((prev) => (prev === tag.id ? null : tag.id))
-            }
-            title={`Filter by ${tag.label}`}
-          >
-            <span className="tag-dot" />
-            {tag.label}
-            {tagCounts[tag.id] > 0 && (
-              <span className="tag-count">{tagCounts[tag.id]}</span>
-            )}
-          </button>
-        ))}
-        {activeTagFilter && (
-          <button
-            className="tag-filter-clear"
-            onClick={() => setActiveTagFilter(null)}
-          >
-            <i className="fas fa-xmark" />
-            Clear filter
-          </button>
-        )}
+        <div className="tag-filter-bar">
+          {JOB_TAGS.map((tag) => (
+            <button
+              key={tag.id}
+              className={`tag-filter-btn${activeTagFilter === tag.id ? " tag-filter-btn--active" : ""}${tagCounts[tag.id] === 0 ? " tag-filter-btn--empty" : ""}`}
+              style={{ "--tag-color": tag.color } as React.CSSProperties}
+              onClick={() =>
+                setActiveTagFilter((prev) => (prev === tag.id ? null : tag.id))
+              }
+              title={`Filter by ${tag.label}`}
+            >
+              <span className="tag-dot" />
+              {tag.label}
+              {tagCounts[tag.id] > 0 && (
+                <span className="tag-count">{tagCounts[tag.id]}</span>
+              )}
+            </button>
+          ))}
+          {(activeTagFilter || searchQuery) && (
+            <button
+              className="tag-filter-clear"
+              onClick={() => { setActiveTagFilter(null); setSearchQuery(""); }}
+            >
+              <i className="fas fa-xmark" />
+              {activeTagFilter && searchQuery ? "Clear all" : "Clear filter"}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Board columns */}
@@ -512,6 +550,7 @@ export default function KanbanBoard({
               jobPriorities={jobPriorities}
               rejectionReasons={rejectionReasons}
               isActive={overStatus === status}
+              isPulsing={successPulseStatus === status}
               onDeleteJob={onDeleteJob}
               onEditJob={setEditingJob}
               draggingJobId={draggingJobId}
@@ -573,10 +612,11 @@ export default function KanbanBoard({
               width: 240,
               background: "var(--surface)",
               border: "1px solid var(--border-hover)",
+              borderLeft: "3px solid var(--accent)",
               borderRadius: "var(--radius-sm)",
               padding: "0.875rem",
-              boxShadow: "0 16px 40px rgba(0,0,0,0.18), 0 4px 10px rgba(0,0,0,0.1)",
-              transform: "rotate(2deg)",
+              boxShadow: "0 24px 50px rgba(0,0,0,0.22), 0 6px 14px rgba(79,70,229,0.14)",
+              transform: "rotate(2.5deg) scale(1.02)",
               pointerEvents: "none",
               zIndex: 9999,
             }}

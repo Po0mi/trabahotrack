@@ -38,6 +38,7 @@ export default function EditJobModal({
   const [role, setRole] = useState(job.role);
   const [status, setStatus] = useState<JobStatus>(job.status);
   const [jobUrl, setJobUrl] = useState(job.job_url ?? "");
+  const [salary, setSalary] = useState(job.salary ?? "");
   const [notes, setNotes] = useState(job.notes ?? "");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -92,9 +93,10 @@ export default function EditJobModal({
         role,
         status,
         job_url: jobUrl || null,
+        salary: salary || null,
         notes: notes || null,
       });
-      onJobUpdated({ ...job, company, role, status, job_url: jobUrl || null, notes: notes || null });
+      onJobUpdated({ ...job, company, role, status, job_url: jobUrl || null, salary: salary || null, notes: notes || null });
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to update job");
       setIsLoading(false);
@@ -215,12 +217,23 @@ export default function EditJobModal({
           </div>
 
           <div className="form-group">
+            <label htmlFor="edit-salary">Salary</label>
+            <input
+              id="edit-salary"
+              type="text"
+              value={salary}
+              onChange={(e) => setSalary(e.target.value)}
+              placeholder="e.g. $80k–100k, ₱50,000/mo"
+            />
+          </div>
+
+          <div className="form-group">
             <label htmlFor="edit-notes">Notes</label>
             <textarea
               id="edit-notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Salary range, referral contact, interview notes…"
+              placeholder="Referral contact, interview notes…"
               rows={4}
             />
           </div>

@@ -7,6 +7,14 @@ import "@/styles/components/kanbanBoard.scss";
 
 type SortOrder = "newest" | "oldest" | "az";
 
+const EMPTY_COPY: Record<string, string> = {
+  Applied: "Keep applying.",
+  Interview: "You'll land one.",
+  Offer: "Almost there.",
+  Rejected: "Part of the grind.",
+  Ghosted: "Stay consistent.",
+};
+
 const NEXT_SORT: Record<SortOrder, SortOrder> = {
   newest: "oldest",
   oldest: "az",
@@ -26,6 +34,7 @@ interface ColumnProps {
   jobPriorities: Record<string, string>;
   rejectionReasons: Record<string, string>;
   isActive: boolean;
+  isPulsing?: boolean;
   onDeleteJob: (jobId: string) => void;
   onEditJob: (job: Job) => void;
   draggingJobId: string | null;
@@ -40,6 +49,7 @@ export default function Column({
   jobPriorities,
   rejectionReasons,
   isActive,
+  isPulsing,
   onDeleteJob,
   onEditJob,
   draggingJobId,
@@ -64,7 +74,11 @@ export default function Column({
 
   return (
     <div
-      className={`kanban-column kanban-column--${statusClass}${isActive ? " kanban-column-active" : ""}`}
+      className={[
+        `kanban-column kanban-column--${statusClass}`,
+        isActive ? "kanban-column-active" : "",
+        isPulsing ? "kanban-column--pulsing" : "",
+      ].filter(Boolean).join(" ")}
       data-col-status={title}
     >
       <div className="kanban-column-header">
@@ -87,7 +101,7 @@ export default function Column({
 
       <div className="kanban-column-body">
         {sortedJobs.length === 0 && !showGhost ? (
-          <p className="kanban-column-empty">Drop cards here</p>
+          <p className="kanban-column-empty">{EMPTY_COPY[title] ?? "Drop here."}</p>
         ) : (
           <>
             {sortedJobs.map((job) => (

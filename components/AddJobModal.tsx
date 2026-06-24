@@ -38,6 +38,7 @@ export default function AddJobModal({
   const [role, setRole] = useState(initialRole);
   const [status, setStatus] = useState<JobStatus>("Applied");
   const [jobUrl, setJobUrl] = useState(initialUrl);
+  const [salary, setSalary] = useState("");
   const [notes, setNotes] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedPriority, setSelectedPriority] = useState<string>("");
@@ -74,6 +75,7 @@ export default function AddJobModal({
         role,
         status,
         job_url: jobUrl,
+        salary,
         notes,
       });
 
@@ -84,6 +86,7 @@ export default function AddJobModal({
         role,
         status,
         job_url: jobUrl,
+        salary,
         notes,
         created_at: new Date().toISOString(),
       };
@@ -104,6 +107,7 @@ export default function AddJobModal({
     setRole("");
     setStatus("Applied");
     setJobUrl("");
+    setSalary("");
     setNotes("");
     setSelectedTags([]);
     setSelectedPriority("");
@@ -200,12 +204,23 @@ export default function AddJobModal({
           </div>
 
           <div className="form-group">
+            <label htmlFor="salary">Salary</label>
+            <input
+              id="salary"
+              type="text"
+              value={salary}
+              onChange={(e) => setSalary(e.target.value)}
+              placeholder="e.g. $80k–100k, ₱50,000/mo"
+            />
+          </div>
+
+          <div className="form-group">
             <label htmlFor="notes">Notes</label>
             <textarea
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Salary range, referral contact, interview notes…"
+              placeholder="Referral contact, interview notes…"
               rows={3}
             />
           </div>
