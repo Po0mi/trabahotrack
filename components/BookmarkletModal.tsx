@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { generateBookmarklet } from "@/lib/bookmarklet";
 import "@/styles/components/modal.scss";
 
@@ -16,10 +16,10 @@ export default function BookmarkletModal({
   boardUrl,
 }: BookmarkletModalProps) {
   const linkRef = useRef<HTMLAnchorElement>(null);
+  const [isDragged, setIsDragged] = useState(false);
 
   const href = generateBookmarklet(boardUrl);
 
-  // Bypass React's javascript: URL block by setting it imperatively after render
   useEffect(() => {
     if (linkRef.current) {
       linkRef.current.href = href;
@@ -51,8 +51,9 @@ export default function BookmarkletModal({
             <a
               ref={linkRef}
               className="bookmarklet-link"
-              onClick={(e) => e.preventDefault()}
-              draggable
+              draggable="true"
+              onDragStart={() => setIsDragged(true)}
+              onDragEnd={() => setIsDragged(false)}
             >
               <svg
                 width="13"
@@ -68,7 +69,11 @@ export default function BookmarkletModal({
               </svg>
               Add to TrabahoTrack
             </a>
-            <span className="bookmarklet-drag-hint">drag to bookmarks bar</span>
+            <span className="bookmarklet-drag-hint">
+              {isDragged
+                ? "Now drop it in your bookmarks bar!"
+                : "drag to bookmarks bar"}
+            </span>
           </div>
 
           <div className="bookmarklet-sites">
