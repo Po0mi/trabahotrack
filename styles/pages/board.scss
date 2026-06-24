@@ -1,0 +1,20 @@
+.board-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.board-main {
+  flex: 1;
+  padding: 2rem;
+  overflow-x: auto; // Allows horizontal scrolling on mobile
+}
+
+.board-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 50vh;
+  color: #888899;
+  font-size: 1.1rem;
+}

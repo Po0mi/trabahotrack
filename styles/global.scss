@@ -1,9 +1,9 @@
 :root {
-  primary-color: #5e5adb;
-  secondary-color: #475569;
-  tertiary-color: #a55700;
-  neutral-color: #f7f8f9;
+  --primary-color: #5e5adb;
+  --secondary-color: #475569;
+  --tertiary-color: #a55700;
+  --neutral-color: #f7f8f9;
 
-  font-family: "Space Grotesk", sans-serif;
-  font-family-mono: "Inter", sans-serif;
+  --primary-font: "Space Grotesk", sans-serif;
+  --secondary-font: "Inter", sans-serif;
 }
