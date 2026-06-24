@@ -4,14 +4,17 @@ import { useState } from "react";
 import { jobsApi } from "@/lib/jobs";
 import { parseJobUrl } from "@/lib/parseJobUrl";
 import type { Job, JobStatus } from "@/types/job";
-import { JOB_STATUSES, JOB_TAGS } from "@/utils/constants";
+import { JOB_STATUSES, JOB_TAGS, JOB_PRIORITIES } from "@/utils/constants";
 import "@/styles/components/modal.scss";
+
+
 
 interface AddJobModalProps {
   isOpen: boolean;
   onClose: () => void;
   onJobAdded: (job: Job) => void;
   onTagsChange: (jobId: string, tags: string[]) => void;
+  onPriorityChange: (jobId: string, priority: string) => void;
   boardId: string;
   accessToken: string;
   initialCompany?: string;
@@ -24,6 +27,7 @@ export default function AddJobModal({
   onClose,
   onJobAdded,
   onTagsChange,
+  onPriorityChange,
   boardId,
   accessToken,
   initialCompany = "",
@@ -36,11 +40,10 @@ export default function AddJobModal({
   const [jobUrl, setJobUrl] = useState(initialUrl);
   const [notes, setNotes] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedPriority, setSelectedPriority] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [urlHint, setUrlHint] = useState<string | null>(null);
-
   const handleTagToggle = (tagId: string) => {
     setSelectedTags((prev) =>
       prev.includes(tagId) ? prev.filter((t) => t !== tagId) : [...prev, tagId]
@@ -49,63 +52,14 @@ export default function AddJobModal({
 
   if (!isOpen) return null;
 
-  const handleJobUrlPaste = async (e: React.ClipboardEvent<HTMLInputElement>) => {
+  const handleJobUrlPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     const pasted = e.clipboardData.getData("text");
-
-    // Instant local parse first
     const local = parseJobUrl(pasted);
     if (local.company && !company) setCompany(local.company);
     if (local.role && !role) setRole(local.role);
-
-    // Server-side fetch for richer extraction
-    setIsFetching(true);
-    setUrlHint("Fetching job details…");
-    try {
-      const res = await fetch(`/api/scrape-job?url=${encodeURIComponent(pasted)}`);
-      if (res.ok) {
-        const data: { company?: string; role?: string } = await res.json();
-        const filled: string[] = [];
-        if (data.company && !company && !local.company) {
-          setCompany(data.company);
-          filled.push("company");
-        }
-        if (data.role && !role && !local.role) {
-          setRole(data.role);
-          filled.push("role");
-        }
-        // Prefer API data over local parse when both succeed
-        if (data.company && local.company) {
-          setCompany(data.company);
-          if (!filled.includes("company")) filled.push("company");
-        }
-        if (data.role && local.role) {
-          setRole(data.role);
-          if (!filled.includes("role")) filled.push("role");
-        }
-        if (filled.length > 0) {
-          setUrlHint(`Auto-filled ${filled.join(" & ")} from URL`);
-        } else if (local.company || local.role) {
-          setUrlHint("Auto-filled from URL");
-        } else {
-          setUrlHint(null);
-        }
-      } else {
-        // API failed — show result from local parse if anything was found
-        if (local.company || local.role) {
-          setUrlHint("Auto-filled from URL");
-        } else {
-          setUrlHint(null);
-        }
-      }
-    } catch {
-      if (local.company || local.role) {
-        setUrlHint("Auto-filled from URL");
-      } else {
-        setUrlHint(null);
-      }
-    } finally {
-      setIsFetching(false);
-      setTimeout(() => setUrlHint(null), 4000);
+    if (local.company || local.role) {
+      setUrlHint("Auto-filled from URL");
+      setTimeout(() => setUrlHint(null), 3000);
     }
   };
 
@@ -136,6 +90,7 @@ export default function AddJobModal({
 
       onJobAdded(newJob);
       if (selectedTags.length > 0) onTagsChange(newJobId, selectedTags);
+      if (selectedPriority) onPriorityChange(newJobId, selectedPriority);
       handleReset();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to add job");
@@ -151,6 +106,7 @@ export default function AddJobModal({
     setJobUrl("");
     setNotes("");
     setSelectedTags([]);
+    setSelectedPriority("");
     setError(null);
     setUrlHint(null);
   };
@@ -181,12 +137,7 @@ export default function AddJobModal({
               onPaste={handleJobUrlPaste}
               placeholder="Paste a LinkedIn or Indeed URL to auto-fill"
             />
-            {isFetching && (
-              <p className="form-hint form-hint--loading">Fetching job details…</p>
-            )}
-            {!isFetching && urlHint && (
-              <p className="form-hint">✨ {urlHint}</p>
-            )}
+            {urlHint && <p className="form-hint">✨ {urlHint}</p>}
           </div>
 
           <div className="form-group">
@@ -209,21 +160,43 @@ export default function AddJobModal({
               value={role}
               onChange={(e) => setRole(e.target.value)}
               placeholder="e.g. Frontend Engineer"
+              autoComplete="off"
               required
             />
           </div>
 
-          <div className="form-group">
-            <label htmlFor="status">Status</label>
-            <select
-              id="status"
-              value={status}
-              onChange={(e) => setStatus(e.target.value as JobStatus)}
-            >
-              {JOB_STATUSES.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="status">Status</label>
+              <select
+                id="status"
+                value={status}
+                onChange={(e) => setStatus(e.target.value as JobStatus)}
+              >
+                {JOB_STATUSES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Priority</label>
+              <div className="priority-picker">
+                {JOB_PRIORITIES.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className={`priority-btn priority-btn--${p.id}${selectedPriority === p.id ? " priority-btn--active" : ""}`}
+                    style={{ "--priority-color": p.color } as React.CSSProperties}
+                    onClick={() => setSelectedPriority((prev) => prev === p.id ? "" : p.id)}
+                    title={`${p.label} priority`}
+                  >
+                    <span className="priority-dot" />
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           <div className="form-group">
@@ -261,7 +234,7 @@ export default function AddJobModal({
             <button type="button" className="btn-secondary" onClick={handleClose}>
               Cancel
             </button>
-            <button type="submit" className="btn-primary" disabled={isLoading || isFetching}>
+            <button type="submit" className="btn-primary" disabled={isLoading}>
               {isLoading ? "Saving…" : "Save Job"}
             </button>
           </div>

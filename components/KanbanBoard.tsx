@@ -5,7 +5,6 @@ import { useParams, usePathname, useRouter } from "next/navigation";
 import { STORAGE_KEYS, JOB_TAGS } from "@/utils/constants";
 import { jobsApi } from "@/lib/jobs";
 import { toast } from "@/lib/toast";
-import { triggerConfetti } from "@/lib/confetti";
 import type { Job, JobStatus } from "@/types/job";
 import Column from "./Column";
 import AddJobModal from "./AddJobModal";
@@ -13,6 +12,8 @@ import EditJobModal from "./EditJobModal";
 import ResetBoardModal from "./ResetBoardModal";
 import { JOB_STATUSES } from "@/utils/constants";
 import "@/styles/components/kanbanBoard.scss";
+
+const GHOST_WARN_MS = 7 * 24 * 60 * 60 * 1000;
 
 interface KanbanBoardProps {
   jobs: Job[];
@@ -49,6 +50,23 @@ export default function KanbanBoard({
       return {};
     }
   });
+  const [jobPriorities, setJobPriorities] = useState<Record<string, string>>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.JOB_PRIORITIES);
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
+  const [rejectionReasons, setRejectionReasons] = useState<Record<string, string>>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.REJECTION_REASONS);
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
+
   const searchRef = useRef<HTMLInputElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
   const handleDropRef = useRef<(jobId: string, status: string) => void>(() => {});
@@ -77,6 +95,60 @@ export default function KanbanBoard({
     },
     [],
   );
+
+  const handlePriorityChange = useCallback(
+    (jobId: string, priority: string) => {
+      setJobPriorities((prev) => {
+        const updated = { ...prev, [jobId]: priority };
+        localStorage.setItem(STORAGE_KEYS.JOB_PRIORITIES, JSON.stringify(updated));
+        return updated;
+      });
+    },
+    [],
+  );
+
+  const handleRejectionReasonChange = useCallback(
+    (jobId: string, reason: string) => {
+      setRejectionReasons((prev) => {
+        const updated = { ...prev, [jobId]: reason };
+        localStorage.setItem(STORAGE_KEYS.REJECTION_REASONS, JSON.stringify(updated));
+        return updated;
+      });
+    },
+    [],
+  );
+
+  const handleJobTouchStart = useCallback((jobId: string, startX: number, startY: number) => {
+    setDraggingJobId(jobId);
+    setDragPos({ x: startX, y: startY });
+
+    const onMove = (e: TouchEvent) => {
+      const touch = e.touches[0];
+      if (!touch) return;
+      e.preventDefault();
+      setDragPos({ x: touch.clientX, y: touch.clientY });
+      const col = document.elementFromPoint(touch.clientX, touch.clientY)?.closest("[data-col-status]");
+      setOverStatus(col?.getAttribute("data-col-status") ?? null);
+    };
+
+    const onEnd = (e: TouchEvent) => {
+      document.removeEventListener("touchmove", onMove);
+      document.removeEventListener("touchend", onEnd);
+      document.addEventListener("click", (ev) => ev.stopPropagation(), { capture: true, once: true });
+      const touch = e.changedTouches[0];
+      if (touch) {
+        const col = document.elementFromPoint(touch.clientX, touch.clientY)?.closest("[data-col-status]");
+        const status = col?.getAttribute("data-col-status");
+        if (status) handleDropRef.current(jobId, status);
+      }
+      setDraggingJobId(null);
+      setDragPos(null);
+      setOverStatus(null);
+    };
+
+    document.addEventListener("touchmove", onMove, { passive: false });
+    document.addEventListener("touchend", onEnd);
+  }, []);
 
   const handleJobDragStart = useCallback((jobId: string, clientX: number, clientY: number) => {
     let started = false;
@@ -118,10 +190,28 @@ export default function KanbanBoard({
   const total = jobs.length;
   const interviewCount = jobs.filter((j) => j.status === "Interview").length;
   const offerCount = jobs.filter((j) => j.status === "Offer").length;
+  const rejectionCount = jobs.filter((j) => j.status === "Rejected").length;
   const interviewRate =
     total > 0 ? Math.round(((interviewCount + offerCount) / total) * 100) : 0;
   const offerRate =
     total > 0 ? Math.round((offerCount / total) * 100) : 0;
+
+  // Ghost warning: Applied jobs older than 7 days
+  const ghostingCount = jobs.filter(
+    (j) =>
+      j.status === "Applied" &&
+      Date.now() - new Date(j.created_at).getTime() > GHOST_WARN_MS,
+  ).length;
+
+  // Rejection insight: find most common rejection stage
+  const rejectionStageCounts: Record<string, number> = {};
+  for (const job of jobs) {
+    if (job.status === "Rejected" && rejectionReasons[job.id]) {
+      const stage = rejectionReasons[job.id];
+      rejectionStageCounts[stage] = (rejectionStageCounts[stage] ?? 0) + 1;
+    }
+  }
+  const topRejectionStage = Object.entries(rejectionStageCounts).sort((a, b) => b[1] - a[1])[0];
 
   // Filtered jobs (search + tag filter)
   const q = searchQuery.trim().toLowerCase();
@@ -176,8 +266,6 @@ export default function KanbanBoard({
     if (!jobToUpdate || jobToUpdate.status === newStatus) return;
     onStatusChange(jobId, newStatus as JobStatus);
 
-    if (newStatus === "Offer") triggerConfetti("large");
-    else if (newStatus === "Interview") triggerConfetti("small");
 
     try {
       await jobsApi.updateJobStatus(
@@ -300,12 +388,7 @@ export default function KanbanBoard({
             onClick={() => { if (jobs.length > 0) setIsResetModalOpen(true); }}
             title="Delete all jobs and reset the board"
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
-              <path d="M10 11v6M14 11v6" />
-              <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
-            </svg>
+            <i className="fas fa-trash" />
             Reset Board
           </button>
           <button
@@ -313,26 +396,15 @@ export default function KanbanBoard({
             onClick={() => importRef.current?.click()}
             title="Import backup (.json)"
           >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-              <polyline points="17 8 12 3 7 8" />
-              <line x1="12" y1="3" x2="12" y2="15" />
-            </svg>
+            <i className="fas fa-upload" />
             Import
           </button>
           <button className="btn-toolbar" onClick={handleExport} title="Export all jobs as JSON">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
-              <polyline points="7 10 12 15 17 10" />
-              <line x1="12" y1="15" x2="12" y2="3" />
-            </svg>
+            <i className="fas fa-download" />
             Export
           </button>
           <button className="btn-add-job" onClick={() => setIsAddModalOpen(true)}>
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
+            <i className="fas fa-plus" />
             Add Job
             <kbd className="kbd-hint">N</kbd>
           </button>
@@ -343,7 +415,7 @@ export default function KanbanBoard({
       <div className="stats-bar">
         <div className="stat-card">
           <span className="stat-value">{total}</span>
-          <span className="stat-label">Total Applications</span>
+          <span className="stat-label">Total</span>
         </div>
         <div className="stat-divider" />
         <div className="stat-card">
@@ -355,14 +427,32 @@ export default function KanbanBoard({
           <span className="stat-value stat-value--offer">{offerRate}%</span>
           <span className="stat-label">Offer Rate</span>
         </div>
+        <div className="stat-divider" />
+        <div className="stat-card">
+          <span className="stat-value stat-value--rejected">{rejectionCount}</span>
+          <span className="stat-label">
+            Rejections
+            {topRejectionStage && (
+              <span className="stat-insight" title={`Most common: ${topRejectionStage[0]}`}>
+                · mostly {topRejectionStage[0].replace("resume", "resume screen").replace("technical", "tech interview").replace("final", "final round").replace("no-response", "no response").replace("offer", "offer stage").replace("phone", "phone screen")}
+              </span>
+            )}
+          </span>
+        </div>
+        <div className="stat-divider" />
+        <div className="stat-card">
+          <span className={`stat-value${ghostingCount > 0 ? " stat-value--ghost" : ""}`}>
+            {ghostingCount}
+          </span>
+          <span className="stat-label">
+            {ghostingCount > 0 ? "👀 Ghosting?" : "Ghosting Risk"}
+          </span>
+        </div>
       </div>
 
       {/* Search */}
       <div className="search-bar">
-        <svg className="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="11" cy="11" r="8" />
-          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-        </svg>
+        <i className="fas fa-magnifying-glass search-icon" />
         <input
           ref={searchRef}
           className="search-input"
@@ -373,9 +463,7 @@ export default function KanbanBoard({
         />
         {searchQuery && (
           <button className="search-clear" onClick={() => setSearchQuery("")} aria-label="Clear search">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <i className="fas fa-xmark" />
           </button>
         )}
         <kbd className="search-kbd">/ to focus</kbd>
@@ -405,9 +493,7 @@ export default function KanbanBoard({
             className="tag-filter-clear"
             onClick={() => setActiveTagFilter(null)}
           >
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
-            </svg>
+            <i className="fas fa-xmark" />
             Clear filter
           </button>
         )}
@@ -423,11 +509,14 @@ export default function KanbanBoard({
               title={status}
               jobs={columnJobs}
               jobTags={jobTags}
+              jobPriorities={jobPriorities}
+              rejectionReasons={rejectionReasons}
               isActive={overStatus === status}
               onDeleteJob={onDeleteJob}
               onEditJob={setEditingJob}
               draggingJobId={draggingJobId}
               onJobDragStart={handleJobDragStart}
+              onJobTouchDragStart={handleJobTouchStart}
             />
           );
         })}
@@ -438,6 +527,7 @@ export default function KanbanBoard({
         onClose={() => setIsAddModalOpen(false)}
         onJobAdded={onJobAdded}
         onTagsChange={handleTagsChange}
+        onPriorityChange={handlePriorityChange}
         boardId={boardId}
         accessToken={accessToken}
         initialCompany={prefill?.company}
@@ -453,7 +543,6 @@ export default function KanbanBoard({
         />
       )}
 
-
       {editingJob && (
         <EditJobModal
           key={editingJob.id}
@@ -464,6 +553,10 @@ export default function KanbanBoard({
           accessToken={accessToken}
           tags={jobTags[editingJob.id] ?? []}
           onTagsChange={(tags) => handleTagsChange(editingJob.id, tags)}
+          priority={jobPriorities[editingJob.id] ?? ""}
+          onPriorityChange={(priority) => handlePriorityChange(editingJob.id, priority)}
+          rejectionReason={rejectionReasons[editingJob.id] ?? ""}
+          onRejectionReasonChange={(reason) => handleRejectionReasonChange(editingJob.id, reason)}
         />
       )}
 
@@ -497,6 +590,16 @@ export default function KanbanBoard({
           </div>
         );
       })()}
+
+      {/* Floating Add Button (Quick Add) */}
+      <button
+        className="btn-fab"
+        onClick={() => setIsAddModalOpen(true)}
+        title="Quick Add Job (N)"
+        aria-label="Add Job"
+      >
+        <i className="fas fa-plus" />
+      </button>
     </>
   );
 }

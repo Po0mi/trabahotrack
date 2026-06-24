@@ -4,7 +4,7 @@ import { useState } from "react";
 import { jobsApi } from "@/lib/jobs";
 import { parseJobUrl } from "@/lib/parseJobUrl";
 import type { Job, JobStatus } from "@/types/job";
-import { JOB_STATUSES, JOB_TAGS } from "@/utils/constants";
+import { JOB_STATUSES, JOB_TAGS, JOB_PRIORITIES, REJECTION_STAGES } from "@/utils/constants";
 import "@/styles/components/modal.scss";
 
 interface EditJobModalProps {
@@ -15,6 +15,10 @@ interface EditJobModalProps {
   accessToken: string;
   tags: string[];
   onTagsChange: (tags: string[]) => void;
+  priority?: string;
+  onPriorityChange: (priority: string) => void;
+  rejectionReason?: string;
+  onRejectionReasonChange: (reason: string) => void;
 }
 
 export default function EditJobModal({
@@ -25,6 +29,10 @@ export default function EditJobModal({
   accessToken,
   tags,
   onTagsChange,
+  priority = "",
+  onPriorityChange,
+  rejectionReason = "",
+  onRejectionReasonChange,
 }: EditJobModalProps) {
   const [company, setCompany] = useState(job.company);
   const [role, setRole] = useState(job.role);
@@ -34,6 +42,8 @@ export default function EditJobModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [urlHint, setUrlHint] = useState<string | null>(null);
+  const [localPriority, setLocalPriority] = useState(priority);
+  const [localRejectionReason, setLocalRejectionReason] = useState(rejectionReason);
 
   const handleJobUrlPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     const pasted = e.clipboardData.getData("text");
@@ -58,6 +68,17 @@ export default function EditJobModal({
       ? tags.filter((t) => t !== tagId)
       : [...tags, tagId];
     onTagsChange(next);
+  };
+
+  const handlePriorityToggle = (priorityId: string) => {
+    const next = localPriority === priorityId ? "" : priorityId;
+    setLocalPriority(next);
+    onPriorityChange(next);
+  };
+
+  const handleRejectionReasonChange = (value: string) => {
+    setLocalRejectionReason(value);
+    onRejectionReasonChange(value);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -127,18 +148,58 @@ export default function EditJobModal({
             </div>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="edit-status">Status</label>
-            <select
-              id="edit-status"
-              value={status}
-              onChange={(e) => setStatus(e.target.value as JobStatus)}
-            >
-              {JOB_STATUSES.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="edit-status">Status</label>
+              <select
+                id="edit-status"
+                value={status}
+                onChange={(e) => setStatus(e.target.value as JobStatus)}
+              >
+                {JOB_STATUSES.map((s) => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>Priority</label>
+              <div className="priority-picker">
+                {JOB_PRIORITIES.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className={`priority-btn priority-btn--${p.id}${localPriority === p.id ? " priority-btn--active" : ""}`}
+                    style={{ "--priority-color": p.color } as React.CSSProperties}
+                    onClick={() => handlePriorityToggle(p.id)}
+                    title={`${p.label} priority`}
+                  >
+                    <span className="priority-dot" />
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
+
+          {status === "Rejected" && (
+            <div className="form-group rejection-reason-group">
+              <label htmlFor="edit-rejection-reason">Why Rejected?</label>
+              <select
+                id="edit-rejection-reason"
+                value={localRejectionReason}
+                onChange={(e) => handleRejectionReasonChange(e.target.value)}
+              >
+                <option value="">— select stage (optional) —</option>
+                {REJECTION_STAGES.map((s) => (
+                  <option key={s.id} value={s.id}>{s.label}</option>
+                ))}
+              </select>
+              <p className="form-hint form-hint--rejection">
+                Track rejection patterns to find where you lose opportunities
+              </p>
+            </div>
+          )}
 
           <div className="form-group">
             <label htmlFor="edit-jobUrl">Job URL</label>

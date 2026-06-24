@@ -18,9 +18,9 @@ export default function ToastContainer() {
       {toasts.map((t) => (
         <div key={t.id} className={`toast toast--${t.type}`}>
           <span className="toast-icon">
-            {t.type === "success" && "✅"}
-            {t.type === "error" && "❌"}
-            {t.type === "info" && "ℹ️"}
+            {t.type === "success" && <i className="fas fa-circle-check" />}
+            {t.type === "error" && <i className="fas fa-circle-xmark" />}
+            {t.type === "info" && <i className="fas fa-circle-info" />}
           </span>
           <span className="toast-message">{t.message}</span>
         </div>

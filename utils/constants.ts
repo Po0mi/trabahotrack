@@ -10,6 +10,8 @@ export const STORAGE_KEYS = {
   BOARD_ID: "trabahotrack_board_id",
   ACCESS_TOKEN: "trabahotrack_access_token",
   JOB_TAGS: "trabahotrack_job_tags",
+  JOB_PRIORITIES: "trabahotrack_job_priorities",
+  REJECTION_REASONS: "trabahotrack_rejection_reasons",
 };
 
 export const JOB_TAGS = [
@@ -20,3 +22,23 @@ export const JOB_TAGS = [
 ] as const;
 
 export type TagId = typeof JOB_TAGS[number]["id"];
+
+export const JOB_PRIORITIES = [
+  { id: "high",   label: "High",   color: "#ef4444" },
+  { id: "medium", label: "Medium", color: "#f59e0b" },
+  { id: "low",    label: "Low",    color: "#94a3b8" },
+] as const;
+
+export type PriorityLevel = typeof JOB_PRIORITIES[number]["id"];
+
+export const REJECTION_STAGES = [
+  { id: "resume",      label: "After resume screening" },
+  { id: "phone",       label: "After phone screen" },
+  { id: "technical",   label: "After technical interview" },
+  { id: "final",       label: "After final interview" },
+  { id: "offer",       label: "At offer stage" },
+  { id: "no-response", label: "No response / ghosted" },
+  { id: "other",       label: "Other" },
+] as const;
+
+export type RejectionStage = typeof REJECTION_STAGES[number]["id"];

@@ -21,7 +21,7 @@ export default function DisclaimerModal() {
   return (
     <div className="modal-overlay">
       <div className="modal-content">
-        <div className="modal-disclaimer-icon">🔗</div>
+        <div className="modal-disclaimer-icon"><i className="fas fa-link" /></div>
 
         <div className="modal-header">
           <h2>Before you start</h2>

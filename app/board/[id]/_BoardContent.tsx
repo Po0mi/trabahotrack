@@ -10,6 +10,7 @@ import KanbanBoard from "@/components/KanbanBoard";
 import Navbar from "@/components/Navbar";
 import DisclaimerModal from "@/components/DisclaimerModal";
 import DeleteJobModal from "@/components/DeleteJobModal";
+import DonationModal from "@/components/DonationModal";
 import ToastContainer from "@/components/ToastContainer";
 import "@/styles/pages/board.scss";
 
@@ -22,6 +23,7 @@ export default function BoardContent() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [jobToDelete, setJobToDelete] = useState<Job | null>(null);
+  const [isDonationOpen, setIsDonationOpen] = useState(false);
 
   const prefillCompany = searchParams.get("company") ?? undefined;
   const prefillRole = searchParams.get("role") ?? undefined;
@@ -94,7 +96,9 @@ export default function BoardContent() {
     const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) || "";
     try {
       await jobsApi.deleteJob(boardId, token, jobToDelete.id);
-      setJobs((prevJobs) => prevJobs.filter((job) => job.id !== jobToDelete.id));
+      setJobs((prevJobs) =>
+        prevJobs.filter((job) => job.id !== jobToDelete.id),
+      );
       toast("Application deleted.");
     } catch (error) {
       console.error("Failed to delete job", error);
@@ -146,7 +150,29 @@ export default function BoardContent() {
           />
         )}
       </main>
+      <footer className="board-footer">
+        <span className="board-footer-credit">
+          Made by{" "}
+          <a
+            href="https://github.com/Po0mi?tab=repositories"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="board-footer-link"
+          >
+            Po0mi
+          </a>
+        </span>
+        <span className="board-footer-sep" aria-hidden>
+          ·
+        </span>
+        <button className="btn-donate" onClick={() => setIsDonationOpen(true)}>
+          Support
+        </button>
+      </footer>
       <ToastContainer />
+      {isDonationOpen && (
+        <DonationModal onClose={() => setIsDonationOpen(false)} />
+      )}
     </div>
   );
 }

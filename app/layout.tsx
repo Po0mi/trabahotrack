@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, Inter } from "next/font/google";
 import "./globals.css";
 import "@/styles/global.scss";
+import "@fortawesome/fontawesome-free/css/all.min.css";
 
 // Configure Space Grotesk for headings/titles (Cinematic/Technical feel)
 const spaceGrotesk = Space_Grotesk({
