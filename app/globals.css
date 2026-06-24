@@ -1,5 +1,3 @@
-/* App.css - Minimal reset */
-
 /* Reset */
 *,
 *::before,
@@ -12,10 +10,15 @@
 html,
 body {
   overflow-x: hidden;
-  margin: 0;
-  padding: 0;
   -webkit-font-smoothing: antialiased;
-  font-family: var(--primary-font), sans-serif;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button,
+input,
+textarea,
+select {
+  font-family: inherit;
 }
 
 main {

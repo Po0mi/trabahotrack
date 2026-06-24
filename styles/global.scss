@@ -1,9 +1,128 @@
 :root {
-  --primary-color: #5e5adb;
-  --secondary-color: #475569;
-  --tertiary-color: #a55700;
-  --neutral-color: #f7f8f9;
+  /* Surface */
+  --bg: #f7f8fa;
+  --surface: #ffffff;
+  --surface-hover: #fafafa;
+  --border: #e4e7ec;
+  --border-hover: #d0d5dd;
 
-  --primary-font: "Space Grotesk", sans-serif;
-  --secondary-font: "Inter", sans-serif;
+  /* Text */
+  --text-primary: #101828;
+  --text-secondary: #475467;
+  --text-muted: #98a2b3;
+
+  /* Accent */
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-light: #eef2ff;
+
+  /* Danger */
+  --danger: #ef4444;
+  --danger-light: #fef2f2;
+  --danger-hover: #dc2626;
+
+  /* Status — Applied */
+  --applied-bg: #eff6ff;
+  --applied-color: #1d4ed8;
+  --applied-border: #bfdbfe;
+  --applied-accent: #3b82f6;
+
+  /* Status — Interview */
+  --interview-bg: #fffbeb;
+  --interview-color: #92400e;
+  --interview-border: #fde68a;
+  --interview-accent: #f59e0b;
+
+  /* Status — Offer */
+  --offer-bg: #ecfdf5;
+  --offer-color: #065f46;
+  --offer-border: #a7f3d0;
+  --offer-accent: #10b981;
+
+  /* Status — Rejected */
+  --rejected-bg: #fef2f2;
+  --rejected-color: #991b1b;
+  --rejected-border: #fca5a5;
+  --rejected-accent: #ef4444;
+
+  /* Typography */
+  --font-sans: var(--font-inter), 'Inter', system-ui, sans-serif;
+  --font-brand: var(--font-space-grotesk), 'Space Grotesk', system-ui, sans-serif;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.05);
+  --shadow-sm: 0 1px 3px rgba(16, 24, 40, 0.08), 0 1px 2px rgba(16, 24, 40, 0.04);
+  --shadow-md: 0 4px 6px -1px rgba(16, 24, 40, 0.08), 0 2px 4px -1px rgba(16, 24, 40, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(16, 24, 40, 0.08), 0 4px 6px -2px rgba(16, 24, 40, 0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(16, 24, 40, 0.1), 0 10px 10px -5px rgba(16, 24, 40, 0.04);
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+}
+
+[data-theme="dark"] {
+  /* Surface */
+  --bg: #0d0f18;
+  --surface: #141721;
+  --surface-hover: #1a1d2e;
+  --border: #252836;
+  --border-hover: #303448;
+
+  /* Text */
+  --text-primary: #f0f2fa;
+  --text-secondary: #8b92a9;
+  --text-muted: #4a5068;
+
+  /* Accent */
+  --accent: #6366f1;
+  --accent-hover: #818cf8;
+  --accent-light: #1e2040;
+
+  /* Danger */
+  --danger: #f87171;
+  --danger-light: #2a1414;
+  --danger-hover: #fca5a5;
+
+  /* Status — Applied */
+  --applied-bg: #0e1a35;
+  --applied-color: #93c5fd;
+  --applied-border: #1e3a6e;
+  --applied-accent: #3b82f6;
+
+  /* Status — Interview */
+  --interview-bg: #1c1808;
+  --interview-color: #fcd34d;
+  --interview-border: #3d2e04;
+  --interview-accent: #f59e0b;
+
+  /* Status — Offer */
+  --offer-bg: #071a10;
+  --offer-color: #6ee7b7;
+  --offer-border: #0d3d22;
+  --offer-accent: #10b981;
+
+  /* Status — Rejected */
+  --rejected-bg: #1f0a0a;
+  --rejected-color: #fca5a5;
+  --rejected-border: #4d1313;
+  --rejected-accent: #ef4444;
+
+  /* Shadows */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
 }

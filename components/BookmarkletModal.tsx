@@ -1,0 +1,93 @@
+"use client";
+
+import { useState } from "react";
+import { generateBookmarklet } from "@/lib/bookmarklet";
+import "@/styles/components/modal.scss";
+
+interface BookmarkletModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  boardUrl: string;
+}
+
+export default function BookmarkletModal({ isOpen, onClose, boardUrl }: BookmarkletModalProps) {
+  const [copied, setCopied] = useState(false);
+
+  if (!isOpen) return null;
+
+  const href = generateBookmarklet(boardUrl);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // clipboard API not available
+    }
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content modal-content--bookmarklet" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h2>Browser Bookmarklet</h2>
+          <button className="modal-close" onClick={onClose} aria-label="Close">
+            ×
+          </button>
+        </div>
+
+        <div className="bookmarklet-body">
+          <p className="bookmarklet-desc">
+            Drag the button below to your browser&apos;s bookmarks bar. Then click it on any job
+            listing to instantly add it to this board.
+          </p>
+
+          <div className="bookmarklet-drag-zone">
+            <a
+              href={href}
+              className="bookmarklet-link"
+              onClick={(e) => e.preventDefault()}
+              draggable
+            >
+              <svg
+                width="13"
+                height="13"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+              </svg>
+              Add to TrabahoTrack
+            </a>
+            <span className="bookmarklet-drag-hint">drag to bookmarks bar</span>
+          </div>
+
+          <div className="bookmarklet-sites">
+            <p className="bookmarklet-sites-label">Works on</p>
+            <div className="bookmarklet-sites-list">
+              {["LinkedIn", "Indeed", "Glassdoor", "+ most job boards"].map((s) => (
+                <span key={s} className="bookmarklet-site-chip">
+                  {s}
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="modal-actions">
+          <button className="btn-secondary" onClick={onClose}>
+            Close
+          </button>
+          <button className="btn-primary" onClick={handleCopy}>
+            {copied ? "Copied!" : "Copy Link"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

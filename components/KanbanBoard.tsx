@@ -1,48 +1,419 @@
 "use client";
 
-import { useState } from "react";
-import { useParams } from "next/navigation";
-import { STORAGE_KEYS } from "@/utils/constants";
-import type { Job } from "@/types/job";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useParams, usePathname, useRouter } from "next/navigation";
+import { STORAGE_KEYS, JOB_TAGS } from "@/utils/constants";
+import { jobsApi } from "@/lib/jobs";
+import { toast } from "@/lib/toast";
+import { triggerConfetti } from "@/lib/confetti";
+import type { Job, JobStatus } from "@/types/job";
 import Column from "./Column";
 import AddJobModal from "./AddJobModal";
+import EditJobModal from "./EditJobModal";
+import BookmarkletModal from "./BookmarkletModal";
 import { JOB_STATUSES } from "@/utils/constants";
 import "@/styles/components/kanbanBoard.scss";
 
 interface KanbanBoardProps {
   jobs: Job[];
   onJobAdded: (job: Job) => void;
+  onStatusChange: (jobId: string, newStatus: JobStatus) => void;
+  onDeleteJob: (jobId: string) => void;
+  onJobUpdated: (job: Job) => void;
+  prefill?: { company?: string; role?: string; url?: string };
 }
 
-export default function KanbanBoard({ jobs, onJobAdded }: KanbanBoardProps) {
-  const [isModalOpen, setIsModalOpen] = useState(false);
+export default function KanbanBoard({
+  jobs,
+  onJobAdded,
+  onStatusChange,
+  onDeleteJob,
+  onJobUpdated,
+  prefill,
+}: KanbanBoardProps) {
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isBookmarkletOpen, setIsBookmarkletOpen] = useState(false);
+  const [editingJob, setEditingJob] = useState<Job | null>(null);
+  const [draggingJobId, setDraggingJobId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
+  const [jobTags, setJobTags] = useState<Record<string, string[]>>(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.JOB_TAGS);
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
+  const searchRef = useRef<HTMLInputElement>(null);
+  const importRef = useRef<HTMLInputElement>(null);
+
   const params = useParams();
   const boardId = params.id as string;
   const accessToken = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) || "";
+  const pathname = usePathname();
+  const router = useRouter();
+
+  // Open the add modal pre-filled when arriving via the bookmarklet
+  useEffect(() => {
+    if (prefill?.company || prefill?.role || prefill?.url) {
+      setIsAddModalOpen(true);
+      router.replace(pathname, { scroll: false });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleTagsChange = useCallback(
+    (jobId: string, tags: string[]) => {
+      setJobTags((prev) => {
+        const updated = { ...prev, [jobId]: tags };
+        localStorage.setItem(STORAGE_KEYS.JOB_TAGS, JSON.stringify(updated));
+        return updated;
+      });
+    },
+    [],
+  );
+
+  // Stats
+  const total = jobs.length;
+  const interviewCount = jobs.filter((j) => j.status === "Interview").length;
+  const offerCount = jobs.filter((j) => j.status === "Offer").length;
+  const interviewRate =
+    total > 0 ? Math.round(((interviewCount + offerCount) / total) * 100) : 0;
+  const offerRate =
+    total > 0 ? Math.round((offerCount / total) * 100) : 0;
+
+  // Filtered jobs (search + tag filter)
+  const q = searchQuery.trim().toLowerCase();
+  const filteredJobs = jobs
+    .filter(
+      (j) =>
+        !q ||
+        j.company.toLowerCase().includes(q) ||
+        j.role.toLowerCase().includes(q) ||
+        (j.notes ?? "").toLowerCase().includes(q),
+    )
+    .filter(
+      (j) =>
+        !activeTagFilter ||
+        (jobTags[j.id] ?? []).includes(activeTagFilter),
+    );
+
+  // Keyboard shortcuts
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName;
+      const isEditable =
+        tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+
+      if (e.key === "Escape") {
+        if (editingJob) { setEditingJob(null); return; }
+        if (isAddModalOpen) { setIsAddModalOpen(false); return; }
+        if (activeTagFilter) { setActiveTagFilter(null); return; }
+        return;
+      }
+      if (isEditable) return;
+      if (e.key === "n" || e.key === "N") {
+        e.preventDefault();
+        setIsAddModalOpen(true);
+      }
+      if (e.key === "/") {
+        e.preventDefault();
+        searchRef.current?.focus();
+        searchRef.current?.select();
+      }
+    },
+    [isAddModalOpen, editingJob, activeTagFilter],
+  );
+
+  useEffect(() => {
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
+
+  const handleDrop = async (jobId: string, newStatus: string) => {
+    const jobToUpdate = jobs.find((j) => j.id === jobId);
+    if (!jobToUpdate || jobToUpdate.status === newStatus) return;
+    onStatusChange(jobId, newStatus as JobStatus);
+
+    if (newStatus === "Offer") triggerConfetti("large");
+    else if (newStatus === "Interview") triggerConfetti("small");
+
+    try {
+      await jobsApi.updateJobStatus(
+        boardId,
+        accessToken,
+        jobId,
+        newStatus as JobStatus,
+      );
+      toast(`Moved to ${newStatus}`);
+    } catch (error) {
+      console.error("Failed to update status", error);
+      toast("Failed to move job. Please try again.", "error");
+      onStatusChange(jobId, jobToUpdate.status);
+    }
+  };
+
+  const handleJobUpdatedLocal = (updatedJob: Job) => {
+    onJobUpdated(updatedJob);
+    setEditingJob(null);
+  };
+
+  // Export as JSON
+  const handleExport = () => {
+    const payload = JSON.stringify(
+      { exported_at: new Date().toISOString(), jobs },
+      null,
+      2,
+    );
+    const blob = new Blob([payload], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `trabahotrack-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Import from JSON backup
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const text = await file.text();
+    e.target.value = "";
+
+    let parsed: { jobs: Job[] };
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      toast("Invalid file — could not parse JSON.", "error");
+      return;
+    }
+
+    const importedJobs = parsed?.jobs;
+    if (!Array.isArray(importedJobs) || importedJobs.length === 0) {
+      toast("No jobs found in this backup file.", "error");
+      return;
+    }
+
+    if (
+      !confirm(
+        `Import ${importedJobs.length} job(s) from backup? They will be added to your current board.`,
+      )
+    )
+      return;
+
+    let added = 0;
+    for (const job of importedJobs) {
+      try {
+        const newId = await jobsApi.createJob(boardId, accessToken, {
+          company: job.company,
+          role: job.role,
+          status: job.status,
+          job_url: job.job_url || null,
+          notes: job.notes || null,
+        });
+        onJobAdded({
+          ...job,
+          id: newId,
+          board_id: boardId,
+          created_at: new Date().toISOString(),
+        });
+        added++;
+      } catch {
+        // skip failed jobs silently
+      }
+    }
+
+    toast(`Imported ${added} of ${importedJobs.length} job(s).`);
+  };
+
+  // Count how many jobs have each tag (for showing active dots in filter bar)
+  const tagCounts = JOB_TAGS.reduce<Record<string, number>>((acc, tag) => {
+    acc[tag.id] = jobs.filter((j) => (jobTags[j.id] ?? []).includes(tag.id)).length;
+    return acc;
+  }, {});
 
   return (
     <>
+      {/* Header row */}
       <div className="kanban-header">
         <h1 className="kanban-title">My Applications</h1>
-        <button className="btn-add-job" onClick={() => setIsModalOpen(true)}>
-          + Add Job
-        </button>
+        <div className="kanban-actions">
+          <input
+            ref={importRef}
+            type="file"
+            accept=".json"
+            style={{ display: "none" }}
+            onChange={handleImport}
+          />
+          <button
+            className="btn-toolbar"
+            onClick={() => setIsBookmarkletOpen(true)}
+            title="Get browser bookmarklet"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+            </svg>
+            Bookmarklet
+          </button>
+          <button
+            className="btn-toolbar"
+            onClick={() => importRef.current?.click()}
+            title="Import backup (.json)"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+              <polyline points="17 8 12 3 7 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+            Import
+          </button>
+          <button className="btn-toolbar" onClick={handleExport} title="Export all jobs as JSON">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+            Export
+          </button>
+          <button className="btn-add-job" onClick={() => setIsAddModalOpen(true)}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
+            Add Job
+            <kbd className="kbd-hint">N</kbd>
+          </button>
+        </div>
       </div>
 
+      {/* Stats bar */}
+      <div className="stats-bar">
+        <div className="stat-card">
+          <span className="stat-value">{total}</span>
+          <span className="stat-label">Total Applications</span>
+        </div>
+        <div className="stat-divider" />
+        <div className="stat-card">
+          <span className="stat-value stat-value--interview">{interviewRate}%</span>
+          <span className="stat-label">Interview Rate</span>
+        </div>
+        <div className="stat-divider" />
+        <div className="stat-card">
+          <span className="stat-value stat-value--offer">{offerRate}%</span>
+          <span className="stat-label">Offer Rate</span>
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="search-bar">
+        <svg className="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <input
+          ref={searchRef}
+          className="search-input"
+          type="text"
+          placeholder="Filter by company, role, or notes…"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+        />
+        {searchQuery && (
+          <button className="search-clear" onClick={() => setSearchQuery("")} aria-label="Clear search">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        )}
+        <kbd className="search-kbd">/ to focus</kbd>
+      </div>
+
+      {/* Tag filter bar */}
+      <div className="tag-filter-bar">
+        {JOB_TAGS.map((tag) => (
+          <button
+            key={tag.id}
+            className={`tag-filter-btn${activeTagFilter === tag.id ? " tag-filter-btn--active" : ""}${tagCounts[tag.id] === 0 ? " tag-filter-btn--empty" : ""}`}
+            style={{ "--tag-color": tag.color } as React.CSSProperties}
+            onClick={() =>
+              setActiveTagFilter((prev) => (prev === tag.id ? null : tag.id))
+            }
+            title={`Filter by ${tag.label}`}
+          >
+            <span className="tag-dot" />
+            {tag.label}
+            {tagCounts[tag.id] > 0 && (
+              <span className="tag-count">{tagCounts[tag.id]}</span>
+            )}
+          </button>
+        ))}
+        {activeTagFilter && (
+          <button
+            className="tag-filter-clear"
+            onClick={() => setActiveTagFilter(null)}
+          >
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+            Clear filter
+          </button>
+        )}
+      </div>
+
+      {/* Board columns */}
       <div className="kanban-board">
         {JOB_STATUSES.map((status) => {
-          const columnJobs = jobs.filter((job) => job.status === status);
-          return <Column key={status} title={status} jobs={columnJobs} />;
+          const columnJobs = filteredJobs.filter((job) => job.status === status);
+          return (
+            <Column
+              key={status}
+              title={status}
+              jobs={columnJobs}
+              jobTags={jobTags}
+              onDrop={handleDrop}
+              onDeleteJob={onDeleteJob}
+              onEditJob={setEditingJob}
+              draggingJobId={draggingJobId}
+              onJobDragStart={setDraggingJobId}
+              onJobDragEnd={() => setDraggingJobId(null)}
+            />
+          );
         })}
       </div>
 
       <AddJobModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
         onJobAdded={onJobAdded}
+        onTagsChange={handleTagsChange}
         boardId={boardId}
         accessToken={accessToken}
+        initialCompany={prefill?.company}
+        initialRole={prefill?.role}
+        initialUrl={prefill?.url}
       />
+
+      <BookmarkletModal
+        isOpen={isBookmarkletOpen}
+        onClose={() => setIsBookmarkletOpen(false)}
+        boardUrl={typeof window !== "undefined" ? `${window.location.origin}${pathname}` : ""}
+      />
+
+      {editingJob && (
+        <EditJobModal
+          key={editingJob.id}
+          job={editingJob}
+          onClose={() => setEditingJob(null)}
+          onJobUpdated={handleJobUpdatedLocal}
+          boardId={boardId}
+          accessToken={accessToken}
+          tags={jobTags[editingJob.id] ?? []}
+          onTagsChange={(tags) => handleTagsChange(editingJob.id, tags)}
+        />
+      )}
     </>
   );
 }

@@ -59,6 +59,28 @@ export const jobsApi = {
   },
 
   /**
+   * Update all fields of a job. Requires an `update_job` RPC in Supabase.
+   */
+  async updateJob(
+    boardId: string,
+    accessToken: string,
+    jobId: string,
+    jobData: Omit<Job, "id" | "created_at" | "board_id">,
+  ): Promise<void> {
+    const { error } = await supabase.rpc("update_job", {
+      p_board_id: boardId,
+      p_access_token: accessToken,
+      p_job_id: jobId,
+      p_company: jobData.company.trim(),
+      p_role: jobData.role.trim(),
+      p_status: jobData.status,
+      p_job_url: jobData.job_url?.trim() || null,
+      p_notes: jobData.notes?.trim() || null,
+    });
+    if (error) throw new Error(error.message);
+  },
+
+  /**
    * Delete a job
    */
   async deleteJob(

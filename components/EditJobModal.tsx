@@ -7,46 +7,33 @@ import type { Job, JobStatus } from "@/types/job";
 import { JOB_STATUSES, JOB_TAGS } from "@/utils/constants";
 import "@/styles/components/modal.scss";
 
-interface AddJobModalProps {
-  isOpen: boolean;
+interface EditJobModalProps {
+  job: Job;
   onClose: () => void;
-  onJobAdded: (job: Job) => void;
-  onTagsChange: (jobId: string, tags: string[]) => void;
+  onJobUpdated: (updatedJob: Job) => void;
   boardId: string;
   accessToken: string;
-  initialCompany?: string;
-  initialRole?: string;
-  initialUrl?: string;
+  tags: string[];
+  onTagsChange: (tags: string[]) => void;
 }
 
-export default function AddJobModal({
-  isOpen,
+export default function EditJobModal({
+  job,
   onClose,
-  onJobAdded,
-  onTagsChange,
+  onJobUpdated,
   boardId,
   accessToken,
-  initialCompany = "",
-  initialRole = "",
-  initialUrl = "",
-}: AddJobModalProps) {
-  const [company, setCompany] = useState(initialCompany);
-  const [role, setRole] = useState(initialRole);
-  const [status, setStatus] = useState<JobStatus>("Applied");
-  const [jobUrl, setJobUrl] = useState(initialUrl);
-  const [notes, setNotes] = useState("");
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  tags,
+  onTagsChange,
+}: EditJobModalProps) {
+  const [company, setCompany] = useState(job.company);
+  const [role, setRole] = useState(job.role);
+  const [status, setStatus] = useState<JobStatus>(job.status);
+  const [jobUrl, setJobUrl] = useState(job.job_url ?? "");
+  const [notes, setNotes] = useState(job.notes ?? "");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [urlHint, setUrlHint] = useState<string | null>(null);
-
-  const handleTagToggle = (tagId: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(tagId) ? prev.filter((t) => t !== tagId) : [...prev, tagId]
-    );
-  };
-
-  if (!isOpen) return null;
 
   const handleJobUrlPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     const pasted = e.clipboardData.getData("text");
@@ -66,96 +53,84 @@ export default function AddJobModal({
     }
   };
 
+  const handleTagToggle = (tagId: string) => {
+    const next = tags.includes(tagId)
+      ? tags.filter((t) => t !== tagId)
+      : [...tags, tagId];
+    onTagsChange(next);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
 
     try {
-      const newJobId = await jobsApi.createJob(boardId, accessToken, {
+      await jobsApi.updateJob(boardId, accessToken, job.id, {
         company,
         role,
         status,
-        job_url: jobUrl,
-        notes,
+        job_url: jobUrl || null,
+        notes: notes || null,
       });
-
-      const newJob: Job = {
-        id: newJobId,
-        board_id: boardId,
-        company,
-        role,
-        status,
-        job_url: jobUrl,
-        notes,
-        created_at: new Date().toISOString(),
-      };
-
-      onJobAdded(newJob);
-      if (selectedTags.length > 0) onTagsChange(newJobId, selectedTags);
-      handleReset();
+      onJobUpdated({ ...job, company, role, status, job_url: jobUrl || null, notes: notes || null });
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to add job");
-    } finally {
+      setError(err instanceof Error ? err.message : "Failed to update job");
       setIsLoading(false);
     }
   };
 
-  const handleReset = () => {
-    setCompany("");
-    setRole("");
-    setStatus("Applied");
-    setJobUrl("");
-    setNotes("");
-    setSelectedTags([]);
-    setError(null);
-    setUrlHint(null);
-  };
-
-  const handleClose = () => {
-    handleReset();
-    onClose();
-  };
+  const addedDate = new Date(job.created_at).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
 
   return (
-    <div className="modal-overlay" onClick={handleClose}>
+    <div className="modal-overlay" onClick={onClose}>
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
-          <h2>Add Application</h2>
-          <button className="modal-close" onClick={handleClose} aria-label="Close">
+          <div>
+            <h2>Edit Application</h2>
+            <p className="modal-meta">Added {addedDate}</p>
+          </div>
+          <button className="modal-close" onClick={onClose} aria-label="Close">
             ×
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="modal-form">
-          <div className="form-group">
-            <label htmlFor="company">Company *</label>
-            <input
-              id="company"
-              type="text"
-              value={company}
-              onChange={(e) => setCompany(e.target.value)}
-              placeholder="e.g. Google"
-              required
-            />
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="edit-company">Company *</label>
+              <input
+                id="edit-company"
+                type="text"
+                value={company}
+                onChange={(e) => setCompany(e.target.value)}
+                placeholder="e.g. Google"
+                required
+                autoFocus
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="edit-role">Role *</label>
+              <input
+                id="edit-role"
+                type="text"
+                value={role}
+                onChange={(e) => setRole(e.target.value)}
+                placeholder="e.g. Frontend Engineer"
+                required
+              />
+            </div>
           </div>
 
           <div className="form-group">
-            <label htmlFor="role">Role *</label>
-            <input
-              id="role"
-              type="text"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              placeholder="e.g. Frontend Engineer"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="status">Status</label>
+            <label htmlFor="edit-status">Status</label>
             <select
-              id="status"
+              id="edit-status"
               value={status}
               onChange={(e) => setStatus(e.target.value as JobStatus)}
             >
@@ -166,26 +141,26 @@ export default function AddJobModal({
           </div>
 
           <div className="form-group">
-            <label htmlFor="jobUrl">Job URL</label>
+            <label htmlFor="edit-jobUrl">Job URL</label>
             <input
-              id="jobUrl"
+              id="edit-jobUrl"
               type="url"
               value={jobUrl}
               onChange={(e) => setJobUrl(e.target.value)}
               onPaste={handleJobUrlPaste}
-              placeholder="Paste a LinkedIn or Indeed URL to auto-fill"
+              placeholder="https://..."
             />
             {urlHint && <p className="form-hint">✨ {urlHint}</p>}
           </div>
 
           <div className="form-group">
-            <label htmlFor="notes">Notes</label>
+            <label htmlFor="edit-notes">Notes</label>
             <textarea
-              id="notes"
+              id="edit-notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Salary range, referral contact, interview notes…"
-              rows={3}
+              rows={4}
             />
           </div>
 
@@ -196,7 +171,7 @@ export default function AddJobModal({
                 <button
                   key={tag.id}
                   type="button"
-                  className={`tag-picker-btn${selectedTags.includes(tag.id) ? " tag-picker-btn--active" : ""}`}
+                  className={`tag-picker-btn${tags.includes(tag.id) ? " tag-picker-btn--active" : ""}`}
                   style={{ "--tag-color": tag.color } as React.CSSProperties}
                   onClick={() => handleTagToggle(tag.id)}
                 >
@@ -210,11 +185,11 @@ export default function AddJobModal({
           {error && <p className="form-error">{error}</p>}
 
           <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={handleClose}>
+            <button type="button" className="btn-secondary" onClick={onClose}>
               Cancel
             </button>
             <button type="submit" className="btn-primary" disabled={isLoading}>
-              {isLoading ? "Saving…" : "Save Job"}
+              {isLoading ? "Saving…" : "Save Changes"}
             </button>
           </div>
         </form>
