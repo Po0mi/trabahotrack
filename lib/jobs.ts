@@ -95,4 +95,23 @@ export const jobsApi = {
     });
     if (error) throw new Error(error.message);
   },
+
+  /**
+   * Delete all jobs for a board
+   */
+  async clearBoard(
+    boardId: string,
+    accessToken: string,
+    jobIds: string[],
+  ): Promise<void> {
+    await Promise.all(
+      jobIds.map((id) =>
+        supabase.rpc("delete_job", {
+          p_board_id: boardId,
+          p_access_token: accessToken,
+          p_job_id: id,
+        }),
+      ),
+    );
+  },
 };

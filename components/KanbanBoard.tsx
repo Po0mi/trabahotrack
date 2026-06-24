@@ -20,6 +20,7 @@ interface KanbanBoardProps {
   onStatusChange: (jobId: string, newStatus: JobStatus) => void;
   onDeleteJob: (jobId: string) => void;
   onJobUpdated: (job: Job) => void;
+  onClearBoard: () => void;
   prefill?: { company?: string; role?: string; url?: string };
 }
 
@@ -29,12 +30,15 @@ export default function KanbanBoard({
   onStatusChange,
   onDeleteJob,
   onJobUpdated,
+  onClearBoard,
   prefill,
 }: KanbanBoardProps) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isBookmarkletOpen, setIsBookmarkletOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [draggingJobId, setDraggingJobId] = useState<string | null>(null);
+  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
+  const [overStatus, setOverStatus] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
   const [jobTags, setJobTags] = useState<Record<string, string[]>>(() => {
@@ -47,6 +51,7 @@ export default function KanbanBoard({
   });
   const searchRef = useRef<HTMLInputElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
+  const handleDropRef = useRef<(jobId: string, status: string) => void>(() => {});
 
   const params = useParams();
   const boardId = params.id as string;
@@ -73,6 +78,42 @@ export default function KanbanBoard({
     },
     [],
   );
+
+  const handleJobDragStart = useCallback((jobId: string, clientX: number, clientY: number) => {
+    let started = false;
+
+    const onMove = (e: MouseEvent) => {
+      if (!started) {
+        if (Math.hypot(e.clientX - clientX, e.clientY - clientY) < 5) return;
+        started = true;
+        setDraggingJobId(jobId);
+        document.body.style.cursor = "grabbing";
+        document.body.style.userSelect = "none";
+      }
+      setDragPos({ x: e.clientX, y: e.clientY });
+      const col = document.elementFromPoint(e.clientX, e.clientY)?.closest("[data-col-status]");
+      setOverStatus(col?.getAttribute("data-col-status") ?? null);
+    };
+
+    const onUp = (e: MouseEvent) => {
+      document.removeEventListener("mousemove", onMove);
+      document.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+      if (started) {
+        document.addEventListener("click", (ev) => ev.stopPropagation(), { capture: true, once: true });
+        const col = document.elementFromPoint(e.clientX, e.clientY)?.closest("[data-col-status]");
+        const status = col?.getAttribute("data-col-status");
+        if (status) handleDropRef.current(jobId, status);
+      }
+      setDraggingJobId(null);
+      setDragPos(null);
+      setOverStatus(null);
+    };
+
+    document.addEventListener("mousemove", onMove);
+    document.addEventListener("mouseup", onUp);
+  }, []);
 
   // Stats
   const total = jobs.length;
@@ -153,24 +194,31 @@ export default function KanbanBoard({
       onStatusChange(jobId, jobToUpdate.status);
     }
   };
+  handleDropRef.current = handleDrop;
 
   const handleJobUpdatedLocal = (updatedJob: Job) => {
     onJobUpdated(updatedJob);
     setEditingJob(null);
   };
 
-  // Export as JSON
+  // Export as CSV
   const handleExport = () => {
-    const payload = JSON.stringify(
-      { exported_at: new Date().toISOString(), jobs },
-      null,
-      2,
+    const headers = ["company", "role", "status", "job_url", "notes", "created_at"];
+    const escape = (val: string | null | undefined) => {
+      const s = val ?? "";
+      return `"${s.replace(/"/g, '""')}"`;
+    };
+    const rows = jobs.map((j) =>
+      [j.company, j.role, j.status, j.job_url, j.notes, j.created_at]
+        .map((v) => escape(v as string | null | undefined))
+        .join(","),
     );
-    const blob = new Blob([payload], { type: "application/json" });
+    const payload = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([payload], { type: "text/csv" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `trabahotrack-${new Date().toISOString().slice(0, 10)}.json`;
+    a.download = `trabahotrack-${new Date().toISOString().slice(0, 10)}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -248,6 +296,24 @@ export default function KanbanBoard({
             style={{ display: "none" }}
             onChange={handleImport}
           />
+          <button
+            className="btn-toolbar btn-toolbar--danger"
+            onClick={() => {
+              if (jobs.length === 0) return;
+              if (confirm(`Reset board? This will permanently delete all ${jobs.length} application(s).`)) {
+                onClearBoard();
+              }
+            }}
+            title="Delete all jobs and reset the board"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+              <path d="M10 11v6M14 11v6" />
+              <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+            </svg>
+            Reset Board
+          </button>
           <button
             className="btn-toolbar"
             onClick={() => setIsBookmarkletOpen(true)}
@@ -373,12 +439,11 @@ export default function KanbanBoard({
               title={status}
               jobs={columnJobs}
               jobTags={jobTags}
-              onDrop={handleDrop}
+              isActive={overStatus === status}
               onDeleteJob={onDeleteJob}
               onEditJob={setEditingJob}
               draggingJobId={draggingJobId}
-              onJobDragStart={setDraggingJobId}
-              onJobDragEnd={() => setDraggingJobId(null)}
+              onJobDragStart={handleJobDragStart}
             />
           );
         })}
@@ -414,6 +479,37 @@ export default function KanbanBoard({
           onTagsChange={(tags) => handleTagsChange(editingJob.id, tags)}
         />
       )}
+
+      {/* Drag ghost — follows cursor while dragging */}
+      {draggingJobId && dragPos && (() => {
+        const job = jobs.find((j) => j.id === draggingJobId);
+        if (!job) return null;
+        return (
+          <div
+            style={{
+              position: "fixed",
+              left: dragPos.x + 14,
+              top: dragPos.y - 14,
+              width: 240,
+              background: "var(--surface)",
+              border: "1px solid var(--border-hover)",
+              borderRadius: "var(--radius-sm)",
+              padding: "0.875rem",
+              boxShadow: "0 16px 40px rgba(0,0,0,0.18), 0 4px 10px rgba(0,0,0,0.1)",
+              transform: "rotate(2deg)",
+              pointerEvents: "none",
+              zIndex: 9999,
+            }}
+          >
+            <div style={{ fontWeight: 600, fontSize: "0.9rem", color: "var(--text-primary)", lineHeight: 1.3, marginBottom: "0.25rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {job.company}
+            </div>
+            <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", lineHeight: 1.4 }}>
+              {job.role}
+            </div>
+          </div>
+        );
+      })()}
     </>
   );
 }

@@ -11,11 +11,22 @@ interface JobCardProps {
   isDragging?: boolean;
   onDeleteJob: (jobId: string) => void;
   onEditJob: (job: Job) => void;
-  onDragStart?: (jobId: string) => void;
-  onDragEnd?: () => void;
+  onDragStart?: (jobId: string, x: number, y: number) => void;
 }
 
 const STALE_MS = 14 * 24 * 60 * 60 * 1000;
+
+function timeSince(dateStr: string): string {
+  const ms = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(ms / 60_000);
+  if (mins < 60) return mins <= 1 ? "just now" : `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  return `${months}mo ago`;
+}
 
 function getLogoSrc(job: Job): string {
   let domain = "";
@@ -36,21 +47,16 @@ function getLogoSrc(job: Job): string {
   return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
 }
 
-export default function JobCard({ job, tags, isDragging, onDeleteJob, onEditJob, onDragStart, onDragEnd }: JobCardProps) {
+export default function JobCard({ job, tags, isDragging, onDeleteJob, onEditJob, onDragStart }: JobCardProps) {
   const [logoVisible, setLogoVisible] = useState(true);
 
   const isStale =
     job.status === "Applied" &&
     Date.now() - new Date(job.created_at).getTime() > STALE_MS;
 
-  const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
-    e.dataTransfer.setData("text/plain", job.id);
-    e.dataTransfer.effectAllowed = "move";
-    onDragStart?.(job.id);
-  };
-
-  const handleDragEnd = () => {
-    onDragEnd?.();
+  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    onDragStart?.(job.id, e.clientX, e.clientY);
   };
 
   const activeTags = JOB_TAGS.filter((t) => tags.includes(t.id));
@@ -58,9 +64,8 @@ export default function JobCard({ job, tags, isDragging, onDeleteJob, onEditJob,
   return (
     <div
       className={`job-card${isStale ? " job-card--stale" : ""}${isDragging ? " job-card--dragging" : ""}`}
-      draggable="true"
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
+      onMouseDown={handleMouseDown}
+      onDragStart={(e) => e.preventDefault()}
       onClick={() => onEditJob(job)}
       role="button"
       tabIndex={0}
@@ -114,21 +119,24 @@ export default function JobCard({ job, tags, isDragging, onDeleteJob, onEditJob,
         <p className="job-card-notes">{job.notes}</p>
       )}
 
-      {job.job_url && (
-        <a
-          href={job.job_url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="job-card-link"
-          onClick={(e) => e.stopPropagation()}
-        >
-          View posting
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="7" y1="17" x2="17" y2="7" />
-            <polyline points="7 7 17 7 17 17" />
-          </svg>
-        </a>
-      )}
+      <div className="job-card-footer">
+        {job.job_url && (
+          <a
+            href={job.job_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="job-card-link"
+            onClick={(e) => e.stopPropagation()}
+          >
+            View posting
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="7" y1="17" x2="17" y2="7" />
+              <polyline points="7 7 17 7 17 17" />
+            </svg>
+          </a>
+        )}
+        <span className="job-card-time">{timeSince(job.created_at)}</span>
+      </div>
     </div>
   );
 }

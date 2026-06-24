@@ -3,6 +3,7 @@ export const JOB_STATUSES = [
   "Interview",
   "Offer",
   "Rejected",
+  "Ghosted",
 ] as const;
 
 export const STORAGE_KEYS = {

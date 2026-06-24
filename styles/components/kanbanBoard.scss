@@ -41,6 +41,17 @@
     border-color: var(--border-hover);
     color: var(--text-primary);
   }
+
+  &--danger {
+    color: var(--danger);
+    border-color: color-mix(in srgb, var(--danger) 30%, transparent);
+
+    &:hover {
+      background: var(--danger-light);
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+  }
 }
 
 .btn-add-job {
@@ -293,7 +304,7 @@
 // Board grid
 .kanban-board {
   display: grid;
-  grid-template-columns: repeat(4, minmax(255px, 1fr));
+  grid-template-columns: repeat(5, minmax(220px, 1fr));
   gap: 1.25rem;
   align-items: start;
 }
@@ -320,6 +331,7 @@
   &--interview { --col-accent: var(--interview-accent); }
   &--offer     { --col-accent: var(--offer-accent); }
   &--rejected  { --col-accent: var(--rejected-accent); }
+  &--ghosted   { --col-accent: var(--ghosted-accent); }
 
   &.kanban-column-active {
     border-color: var(--col-accent, var(--accent));
@@ -329,10 +341,48 @@
 
 .kanban-column-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 0.5rem;
   padding: 0.875rem 1rem 0.75rem;
   border-bottom: 1px solid var(--border);
+}
+
+.col-sort-btn {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  border-radius: 4px;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: color 0.15s ease, background 0.15s ease;
+
+  &:hover {
+    color: var(--text-secondary);
+    background: var(--surface-hover);
+  }
+
+  &--active {
+    color: var(--accent);
+
+    &:hover {
+      color: var(--accent);
+      background: rgba(99, 102, 241, 0.08);
+    }
+  }
+}
+
+.col-sort-az {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1;
 }
 
 .kanban-column-title {

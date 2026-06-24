@@ -1,77 +1,90 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useState } from "react";
 import type { Job } from "@/types/job";
 import JobCard from "./JobCard";
 import "@/styles/components/kanbanBoard.scss";
+
+type SortOrder = "newest" | "oldest" | "az";
+
+const NEXT_SORT: Record<SortOrder, SortOrder> = {
+  newest: "oldest",
+  oldest: "az",
+  az: "newest",
+};
+
+const SORT_LABEL: Record<SortOrder, string> = {
+  newest: "Newest first",
+  oldest: "Oldest first",
+  az: "A → Z",
+};
 
 interface ColumnProps {
   title: string;
   jobs: Job[];
   jobTags: Record<string, string[]>;
-  onDrop: (jobId: string, newStatus: string) => void;
+  isActive: boolean;
   onDeleteJob: (jobId: string) => void;
   onEditJob: (job: Job) => void;
   draggingJobId: string | null;
-  onJobDragStart: (jobId: string) => void;
-  onJobDragEnd: () => void;
+  onJobDragStart: (jobId: string, x: number, y: number) => void;
 }
 
 export default function Column({
   title,
   jobs,
   jobTags,
-  onDrop,
+  isActive,
   onDeleteJob,
   onEditJob,
   draggingJobId,
   onJobDragStart,
-  onJobDragEnd,
 }: ColumnProps) {
+  const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const statusClass = title.toLowerCase();
-  const [isDragActive, setIsDragActive] = useState(false);
-  const columnRef = useRef<HTMLDivElement>(null);
+  const showGhost = isActive && draggingJobId !== null;
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = "move";
-    setIsDragActive(true);
-  };
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    if (!columnRef.current?.contains(e.relatedTarget as Node)) {
-      setIsDragActive(false);
-    }
-  };
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    setIsDragActive(false);
-    const jobId = e.dataTransfer.getData("text/plain");
-    if (jobId) onDrop(jobId, title);
-  };
-
-  const showGhost = isDragActive && draggingJobId !== null;
+  const sortedJobs = [...jobs].sort((a, b) => {
+    if (sortOrder === "oldest")
+      return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+    if (sortOrder === "az") return a.company.localeCompare(b.company);
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
 
   return (
     <div
-      ref={columnRef}
-      className={`kanban-column kanban-column--${statusClass}${isDragActive ? " kanban-column-active" : ""}`}
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
+      className={`kanban-column kanban-column--${statusClass}${isActive ? " kanban-column-active" : ""}`}
+      data-col-status={title}
     >
       <div className="kanban-column-header">
         <h2 className="kanban-column-title">{title}</h2>
         <span className="kanban-column-count">{jobs.length}</span>
+        <button
+          className={`col-sort-btn${sortOrder !== "newest" ? " col-sort-btn--active" : ""}`}
+          onClick={() => setSortOrder(NEXT_SORT[sortOrder])}
+          title={`Sort: ${SORT_LABEL[sortOrder]}`}
+        >
+          {sortOrder === "az" ? (
+            <span className="col-sort-az">AZ</span>
+          ) : (
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              {sortOrder === "newest" ? (
+                <polyline points="19 12 12 19 5 12" />
+              ) : (
+                <polyline points="5 12 12 5 19 12" />
+              )}
+            </svg>
+          )}
+        </button>
       </div>
 
       <div className="kanban-column-body">
-        {jobs.length === 0 && !showGhost ? (
+        {sortedJobs.length === 0 && !showGhost ? (
           <p className="kanban-column-empty">Drop cards here</p>
         ) : (
           <>
-            {jobs.map((job) => (
+            {sortedJobs.map((job) => (
               <JobCard
                 key={job.id}
                 job={job}
@@ -80,7 +93,6 @@ export default function Column({
                 onDeleteJob={onDeleteJob}
                 onEditJob={onEditJob}
                 onDragStart={onJobDragStart}
-                onDragEnd={onJobDragEnd}
               />
             ))}
             {showGhost && <div className="kanban-column-ghost" />}

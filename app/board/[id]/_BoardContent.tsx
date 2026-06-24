@@ -104,6 +104,19 @@ export default function BoardContent() {
     }
   };
 
+  const handleClearBoard = async () => {
+    const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN) || "";
+    const ids = jobs.map((j) => j.id);
+    try {
+      await jobsApi.clearBoard(boardId, token, ids);
+      setJobs([]);
+      toast("Board cleared.");
+    } catch (error) {
+      console.error("Failed to clear board", error);
+      toast("Failed to clear board. Please try again.", "error");
+    }
+  };
+
   return (
     <div className="board-page">
       <DisclaimerModal />
@@ -128,6 +141,7 @@ export default function BoardContent() {
             onStatusChange={handleStatusChange}
             onDeleteJob={handleDeleteJob}
             onJobUpdated={handleJobUpdated}
+            onClearBoard={handleClearBoard}
             prefill={prefill}
           />
         )}
