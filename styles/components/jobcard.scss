@@ -194,3 +194,9 @@
     background: var(--danger-light);
   }
 }
+
+@media (hover: none) {
+  .job-card-delete {
+    opacity: 1;
+  }
+}

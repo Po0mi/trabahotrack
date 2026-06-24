@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { generateBookmarklet } from "@/lib/bookmarklet";
 import "@/styles/components/modal.scss";
 
@@ -11,21 +10,9 @@ interface BookmarkletModalProps {
 }
 
 export default function BookmarkletModal({ isOpen, onClose, boardUrl }: BookmarkletModalProps) {
-  const [copied, setCopied] = useState(false);
-
   if (!isOpen) return null;
 
   const href = generateBookmarklet(boardUrl);
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(href);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // clipboard API not available
-    }
-  };
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -80,11 +67,8 @@ export default function BookmarkletModal({ isOpen, onClose, boardUrl }: Bookmark
         </div>
 
         <div className="modal-actions">
-          <button className="btn-secondary" onClick={onClose}>
-            Close
-          </button>
-          <button className="btn-primary" onClick={handleCopy}>
-            {copied ? "Copied!" : "Copy Link"}
+          <button className="btn-primary" onClick={onClose}>
+            Done
           </button>
         </div>
       </div>

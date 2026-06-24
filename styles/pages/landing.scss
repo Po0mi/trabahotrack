@@ -123,3 +123,41 @@
     transform: translateY(0);
   }
 }
+
+@media (max-width: 480px) {
+  .landing {
+    padding: 1.25rem;
+    align-items: flex-start;
+    padding-top: 3rem;
+  }
+
+  .landing-logo-img {
+    height: 72px;
+  }
+
+  .landing-logo-mark {
+    margin-bottom: 1.5rem;
+  }
+
+  .landing-title {
+    font-size: 2.25rem;
+    letter-spacing: -1px;
+  }
+
+  .landing-subtitle {
+    font-size: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .landing-btn {
+    width: 100%;
+    justify-content: center;
+    padding: 0.875rem 1.25rem;
+  }
+
+  .landing-meta {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    justify-content: center;
+  }
+}

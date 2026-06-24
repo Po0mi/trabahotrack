@@ -62,7 +62,7 @@ export default function Navbar() {
             title="Open board on another device"
           >
             <i className="fa-solid fa-qrcode" style={{ fontSize: "13px" }} />
-            Sync to Phone
+            <span className="btn-share-label">Sync to Phone</span>
           </button>
         </div>
       </nav>

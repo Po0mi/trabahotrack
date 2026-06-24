@@ -92,3 +92,25 @@
     color: var(--offer-color);
   }
 }
+
+@media (max-width: 480px) {
+  .navbar {
+    padding: 0 1rem;
+  }
+
+  .navbar-title {
+    font-size: 0.95rem;
+  }
+
+  .navbar-logo-img {
+    height: 38px;
+  }
+
+  .btn-share {
+    padding: 0.45rem 0.625rem;
+
+    .btn-share-label {
+      display: none;
+    }
+  }
+}
