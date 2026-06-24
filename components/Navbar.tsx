@@ -1,4 +1,5 @@
-import "@/styles/components/navbar.scss";
+import "@/styles/layout/navbar.scss";
+
 export default function Navbar() {
   return (
     <nav className="navbar">

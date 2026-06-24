@@ -1,5 +1,5 @@
 import type { Job } from "@/types/job";
-import "@/styles/components/jobCard.scss";
+import "@/styles/components/jobcard.scss";
 
 interface JobCardProps {
   job: Job;
