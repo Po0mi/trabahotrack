@@ -96,7 +96,9 @@
     padding: 0.625rem 0.75rem;
     color: var(--text-primary);
     font-size: 0.875rem;
-    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
 
     &:focus {
       outline: none;
@@ -165,7 +167,11 @@
   }
 
   &--active {
-    background: color-mix(in srgb, var(--tag-color, var(--accent)) 15%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--tag-color, var(--accent)) 15%,
+      transparent
+    );
     border-color: var(--tag-color, var(--accent));
     color: var(--text-primary);
   }
@@ -213,7 +219,9 @@
   cursor: pointer;
   font-weight: 600;
   font-size: 0.85rem;
-  transition: background 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
   letter-spacing: -0.01em;
 
   &:hover {
@@ -266,7 +274,9 @@
   cursor: pointer;
   font-weight: 600;
   font-size: 0.85rem;
-  transition: background 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease;
   letter-spacing: -0.01em;
 
   &:hover {
@@ -358,24 +368,19 @@
 }
 
 .bookmarklet-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 1rem;
-  background: var(--accent);
-  color: #fff;
-  border-radius: var(--radius-sm);
-  font-size: 0.82rem;
+  display: inline-block;
+  color: #646cff;
+  text-decoration: underline;
+  font-size: 1rem;
   font-weight: 600;
-  text-decoration: none;
   cursor: grab;
-  white-space: nowrap;
-  flex-shrink: 0;
-  transition: background 0.15s ease;
-  user-select: none;
+  padding: 0.5rem 1rem;
+  border: 1px dashed rgba(100, 108, 255, 0.3);
+  border-radius: 4px;
+  background: rgba(100, 108, 255, 0.05);
 
   &:hover {
-    background: var(--accent-hover);
+    background: rgba(100, 108, 255, 0.1);
   }
 
   &:active {
@@ -420,8 +425,12 @@
 }
 
 @keyframes overlayIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes modalIn {
@@ -443,7 +452,8 @@
 
   .modal-content {
     padding: 1.25rem;
-    border-radius: var(--radius-lg) var(--radius-lg) var(--radius-sm) var(--radius-sm);
+    border-radius: var(--radius-lg) var(--radius-lg) var(--radius-sm)
+      var(--radius-sm);
     max-width: 100%;
     width: 100%;
   }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect } from "react";
 import { generateBookmarklet } from "@/lib/bookmarklet";
 import "@/styles/components/modal.scss";
 
@@ -16,7 +16,6 @@ export default function BookmarkletModal({
   boardUrl,
 }: BookmarkletModalProps) {
   const linkRef = useRef<HTMLAnchorElement>(null);
-  const [isDragged, setIsDragged] = useState(false);
 
   const href = generateBookmarklet(boardUrl);
 
@@ -43,36 +42,17 @@ export default function BookmarkletModal({
 
         <div className="bookmarklet-body">
           <p className="bookmarklet-desc">
-            Drag the button below to your browser&apos;s bookmarks bar. Then
-            click it on any job listing to instantly add it to this board.
+            Drag the link below to your browser&apos;s bookmarks bar. Then click
+            it on any job listing to instantly add it to this board.
           </p>
 
           <div className="bookmarklet-drag-zone">
-            <a
-              ref={linkRef}
-              className="bookmarklet-link"
-              draggable="true"
-              onDragStart={() => setIsDragged(true)}
-              onDragEnd={() => setIsDragged(false)}
-            >
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-              </svg>
+            {/* Plain, unstyled link - this is the key! */}
+            <a ref={linkRef} className="bookmarklet-plain-link">
               Add to TrabahoTrack
             </a>
             <span className="bookmarklet-drag-hint">
-              {isDragged
-                ? "Now drop it in your bookmarks bar!"
-                : "drag to bookmarks bar"}
+              ↑ drag this to your bookmarks bar
             </span>
           </div>
 
