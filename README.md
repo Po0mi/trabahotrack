@@ -1,64 +1,45 @@
-# Job Tracker with Bookmarklet Autofill
+# TrabahoTrack
 
-A simple job tracking web app that lets you save job listings directly from job sites using a bookmarklet.
+**A blazing-fast, privacy-first Kanban job tracker. No sign-ups, no logins. Just your career.**
 
-## Overview
+TrabahoTrack is a modern, link-based job application tracker built for speed and privacy. Instead of forcing users to create accounts and remember passwords, TrabahoTrack generates a secure, unique "Magic Link" for every board. 
 
-This project helps you track job applications without manually copying details. With one click, you can capture job information from sites like LinkedIn or Indeed and save it to your personal dashboard.
+## Key Features
 
-## Features
-
-* One-click job saving using a bookmarklet
-* Automatically captures job title, company, and link
-* Dashboard to view and manage saved jobs
-* Simple and clean UI for tracking applications
-
-## How It Works
-
-1. Open a job listing (LinkedIn, Indeed, etc.)
-2. Click the bookmarklet
-3. The tool scrapes the job details
-4. Data is saved to your database
-5. View and manage jobs in the dashboard
+- **Zero-Friction Onboarding:** Create a board instantly. No email, no password, no verification emails.
+- **Secure by Design:** Uses a unique access token stored in your browser's `localStorage`. Supabase Row Level Security (RLS) and RPC functions ensure only the token holder can access the data.
+- **Native Drag & Drop:** Smoothly move applications between columns (Applied, Interview, Offer, Rejected, Ghosted) using native HTML5 DnD.
+- **Smart Bookmarklet:** One-click save directly from LinkedIn, Indeed, or Glassdoor. The bookmarklet scrapes the page title and auto-fills your board.
+- **Cross-Device Sync:** Generate a secure QR code to instantly open your board on your phone or another computer.
+- **Data Ownership:** Export/Import your entire board as JSON. If you clear your cache, you can restore your data in seconds.
+- **Premium UI:** Built with a custom, eye-friendly dark theme using SCSS.
 
 ## Tech Stack
 
-* Next.js
-* Supabase (database & API)
-* JavaScript (bookmarklet scraping)
-* SCSS for styling
+- **Frontend:** Next.js 16 (App Router), React 19, TypeScript
+- **Styling:** SCSS (Custom Dark Theme, BEM-inspired single-dash naming)
+- **Backend & Database:** Supabase (PostgreSQL, Row Level Security, RPC Functions)
+- **Hosting:** Vercel
 
-## Why I Built This
+## Architecture & Security Model
 
-Manually tracking job applications is repetitive and time-consuming. This project simplifies the process by automating data capture and organizing everything in one place.
+TrabahoTrack operates on a **"No-Auth" architecture**. 
 
-## Current Status
+1. **The Identity:** When a user creates a board, the frontend generates a secure, random `access_token`. 
+2. **The Database:** The `board_id` (public) and `access_token` (private) are saved in Supabase. The user's token is saved in their browser's `localStorage`.
+3. **The Bouncers (RPCs):** Direct table access is completely revoked. All data operations (Create, Read, Update, Delete) are handled via Supabase **RPC (Remote Procedure Call) functions**. 
+4. **The Check:** Every time the frontend calls an RPC function, it passes the `access_token`. The SQL function checks if the token matches the board. If it does, the action is allowed. If not, it throws an exception.
 
-MVP is complete:
+This means **zero user data is ever exposed**, and the database is completely locked down from direct SQL injection or unauthorized access.
 
-* Bookmarklet scraping works
-* Data saving is functional
-* Dashboard displays saved jobs
+## 🚀 Getting Started
 
-## Future Improvements
+### Prerequisites
+- Node.js (v18 or higher)
+- A free [Supabase](https://supabase.com) account
 
-* Chrome extension version for better reliability
-* Improved scraping for more job platforms
-* Job status tracking (Applied, Interview, Rejected)
-* Better UI/UX enhancements
-
-## Getting Started
-
-Clone the repository and install dependencies:
-
+### 1. Clone the Repository
+```bash
+git clone https://github.com/Po0mi/trabahotrack.git
+cd trabahotrack
 npm install
-
-Run the development server:
-
-npm run dev
-
-## Notes
-
-Some job sites may not work perfectly due to DOM structure differences or security restrictions. The scraper is designed to be flexible but may need adjustments per site.
-
-
