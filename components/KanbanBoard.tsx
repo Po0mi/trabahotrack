@@ -11,6 +11,7 @@ import Column from "./Column";
 import AddJobModal from "./AddJobModal";
 import EditJobModal from "./EditJobModal";
 import BookmarkletModal from "./BookmarkletModal";
+import ResetBoardModal from "./ResetBoardModal";
 import { JOB_STATUSES } from "@/utils/constants";
 import "@/styles/components/kanbanBoard.scss";
 
@@ -35,6 +36,7 @@ export default function KanbanBoard({
 }: KanbanBoardProps) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isBookmarkletOpen, setIsBookmarkletOpen] = useState(false);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [draggingJobId, setDraggingJobId] = useState<string | null>(null);
   const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
@@ -298,12 +300,7 @@ export default function KanbanBoard({
           />
           <button
             className="btn-toolbar btn-toolbar--danger"
-            onClick={() => {
-              if (jobs.length === 0) return;
-              if (confirm(`Reset board? This will permanently delete all ${jobs.length} application(s).`)) {
-                onClearBoard();
-              }
-            }}
+            onClick={() => { if (jobs.length > 0) setIsResetModalOpen(true); }}
             title="Delete all jobs and reset the board"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -460,6 +457,14 @@ export default function KanbanBoard({
         initialRole={prefill?.role}
         initialUrl={prefill?.url}
       />
+
+      {isResetModalOpen && (
+        <ResetBoardModal
+          jobCount={jobs.length}
+          onConfirm={onClearBoard}
+          onClose={() => setIsResetModalOpen(false)}
+        />
+      )}
 
       <BookmarkletModal
         isOpen={isBookmarkletOpen}
