@@ -138,6 +138,11 @@
   color: var(--offer-accent);
   margin-top: 0.25rem;
   font-weight: 500;
+
+  &--loading {
+    color: var(--text-secondary);
+    font-weight: 400;
+  }
 }
 
 // Tag picker in EditJobModal

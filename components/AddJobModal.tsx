@@ -37,6 +37,7 @@ export default function AddJobModal({
   const [notes, setNotes] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [urlHint, setUrlHint] = useState<string | null>(null);
 
@@ -48,21 +49,63 @@ export default function AddJobModal({
 
   if (!isOpen) return null;
 
-  const handleJobUrlPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+  const handleJobUrlPaste = async (e: React.ClipboardEvent<HTMLInputElement>) => {
     const pasted = e.clipboardData.getData("text");
-    const parsed = parseJobUrl(pasted);
-    let hints: string[] = [];
-    if (parsed.company && !company) {
-      setCompany(parsed.company);
-      hints.push("company");
-    }
-    if (parsed.role && !role) {
-      setRole(parsed.role);
-      hints.push("role");
-    }
-    if (hints.length > 0) {
-      setUrlHint(`Auto-filled ${hints.join(" & ")} from URL`);
-      setTimeout(() => setUrlHint(null), 3000);
+
+    // Instant local parse first
+    const local = parseJobUrl(pasted);
+    if (local.company && !company) setCompany(local.company);
+    if (local.role && !role) setRole(local.role);
+
+    // Server-side fetch for richer extraction
+    setIsFetching(true);
+    setUrlHint("Fetching job details…");
+    try {
+      const res = await fetch(`/api/scrape-job?url=${encodeURIComponent(pasted)}`);
+      if (res.ok) {
+        const data: { company?: string; role?: string } = await res.json();
+        const filled: string[] = [];
+        if (data.company && !company && !local.company) {
+          setCompany(data.company);
+          filled.push("company");
+        }
+        if (data.role && !role && !local.role) {
+          setRole(data.role);
+          filled.push("role");
+        }
+        // Prefer API data over local parse when both succeed
+        if (data.company && local.company) {
+          setCompany(data.company);
+          if (!filled.includes("company")) filled.push("company");
+        }
+        if (data.role && local.role) {
+          setRole(data.role);
+          if (!filled.includes("role")) filled.push("role");
+        }
+        if (filled.length > 0) {
+          setUrlHint(`Auto-filled ${filled.join(" & ")} from URL`);
+        } else if (local.company || local.role) {
+          setUrlHint("Auto-filled from URL");
+        } else {
+          setUrlHint(null);
+        }
+      } else {
+        // API failed — show result from local parse if anything was found
+        if (local.company || local.role) {
+          setUrlHint("Auto-filled from URL");
+        } else {
+          setUrlHint(null);
+        }
+      }
+    } catch {
+      if (local.company || local.role) {
+        setUrlHint("Auto-filled from URL");
+      } else {
+        setUrlHint(null);
+      }
+    } finally {
+      setIsFetching(false);
+      setTimeout(() => setUrlHint(null), 4000);
     }
   };
 
@@ -129,6 +172,24 @@ export default function AddJobModal({
 
         <form onSubmit={handleSubmit} className="modal-form">
           <div className="form-group">
+            <label htmlFor="jobUrl">Job URL</label>
+            <input
+              id="jobUrl"
+              type="url"
+              value={jobUrl}
+              onChange={(e) => setJobUrl(e.target.value)}
+              onPaste={handleJobUrlPaste}
+              placeholder="Paste a LinkedIn or Indeed URL to auto-fill"
+            />
+            {isFetching && (
+              <p className="form-hint form-hint--loading">Fetching job details…</p>
+            )}
+            {!isFetching && urlHint && (
+              <p className="form-hint">✨ {urlHint}</p>
+            )}
+          </div>
+
+          <div className="form-group">
             <label htmlFor="company">Company *</label>
             <input
               id="company"
@@ -166,19 +227,6 @@ export default function AddJobModal({
           </div>
 
           <div className="form-group">
-            <label htmlFor="jobUrl">Job URL</label>
-            <input
-              id="jobUrl"
-              type="url"
-              value={jobUrl}
-              onChange={(e) => setJobUrl(e.target.value)}
-              onPaste={handleJobUrlPaste}
-              placeholder="Paste a LinkedIn or Indeed URL to auto-fill"
-            />
-            {urlHint && <p className="form-hint">✨ {urlHint}</p>}
-          </div>
-
-          <div className="form-group">
             <label htmlFor="notes">Notes</label>
             <textarea
               id="notes"
@@ -213,7 +261,7 @@ export default function AddJobModal({
             <button type="button" className="btn-secondary" onClick={handleClose}>
               Cancel
             </button>
-            <button type="submit" className="btn-primary" disabled={isLoading}>
+            <button type="submit" className="btn-primary" disabled={isLoading || isFetching}>
               {isLoading ? "Saving…" : "Save Job"}
             </button>
           </div>

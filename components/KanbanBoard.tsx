@@ -10,7 +10,6 @@ import type { Job, JobStatus } from "@/types/job";
 import Column from "./Column";
 import AddJobModal from "./AddJobModal";
 import EditJobModal from "./EditJobModal";
-import BookmarkletModal from "./BookmarkletModal";
 import ResetBoardModal from "./ResetBoardModal";
 import { JOB_STATUSES } from "@/utils/constants";
 import "@/styles/components/kanbanBoard.scss";
@@ -35,7 +34,6 @@ export default function KanbanBoard({
   prefill,
 }: KanbanBoardProps) {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isBookmarkletOpen, setIsBookmarkletOpen] = useState(false);
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [draggingJobId, setDraggingJobId] = useState<string | null>(null);
@@ -61,7 +59,6 @@ export default function KanbanBoard({
   const pathname = usePathname();
   const router = useRouter();
 
-  // Open the add modal pre-filled when arriving via the bookmarklet
   useEffect(() => {
     if (prefill?.company || prefill?.role || prefill?.url) {
       setIsAddModalOpen(true);
@@ -313,16 +310,6 @@ export default function KanbanBoard({
           </button>
           <button
             className="btn-toolbar"
-            onClick={() => setIsBookmarkletOpen(true)}
-            title="Get browser bookmarklet"
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
-            </svg>
-            Bookmarklet
-          </button>
-          <button
-            className="btn-toolbar"
             onClick={() => importRef.current?.click()}
             title="Import backup (.json)"
           >
@@ -466,11 +453,6 @@ export default function KanbanBoard({
         />
       )}
 
-      <BookmarkletModal
-        isOpen={isBookmarkletOpen}
-        onClose={() => setIsBookmarkletOpen(false)}
-        boardUrl={typeof window !== "undefined" ? `${window.location.origin}${pathname}` : ""}
-      />
 
       {editingJob && (
         <EditJobModal

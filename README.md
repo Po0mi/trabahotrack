@@ -6,8 +6,8 @@ TrabahoTrack is a blazing-fast job application tracker. No sign-ups, no password
 
 ## Features
 - **Zero-Friction:** Instant board creation. No accounts needed.
-- **Smart Bookmarklet:** Auto-save jobs from LinkedIn/Indeed with one click.
-- **Native Drag & Drop:** Smooth HTML5 drag-and-drop between columns.
+- **URL Auto-Fill:** Paste a LinkedIn or Indeed job URL into the Job URL field and the company and role auto-fill instantly.
+- **Native Drag & Drop:** Smooth drag-and-drop between columns.
 - **Cross-Device Sync:** Scan a QR code to open your board on your phone.
 - **Secure:** Data is locked behind a unique token and Supabase RPC functions.
 
@@ -38,9 +38,7 @@ TrabahoTrack is a blazing-fast job application tracker. No sign-ups, no password
    npm run dev
    ```
 
-## 🌐 Live Demo
+## Live Demo
 https://trabahotrack.vercel.app
 
 Built with by [Dan Gabrielle De Castro](https://github.com/Po0mi)
-
-
