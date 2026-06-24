@@ -39,7 +39,7 @@ TrabahoTrack is a blazing-fast job application tracker. No sign-ups, no password
    ```
 
 ## 🌐 Live Demo
-[trabahotrack.vercel.app]
+https://trabahotrack.vercel.app
 
 Built with by [Dan Gabrielle De Castro](https://github.com/Po0mi)
 
