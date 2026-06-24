@@ -367,20 +367,23 @@
   border-radius: var(--radius);
 }
 
+// PLAIN LINK STYLE - This is the key fix for bookmarklet dragging
 .bookmarklet-link {
   display: inline-block;
-  color: #646cff;
+  color: var(--accent, #646cff);
   text-decoration: underline;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: grab;
-  padding: 0.5rem 1rem;
-  border: 1px dashed rgba(100, 108, 255, 0.3);
+  padding: 0.25rem 0.5rem;
+  border: 1px dashed currentColor;
   border-radius: 4px;
-  background: rgba(100, 108, 255, 0.05);
+  background: transparent;
+  transition: all 0.15s ease;
 
   &:hover {
-    background: rgba(100, 108, 255, 0.1);
+    background: color-mix(in srgb, var(--accent, #646cff) 8%, transparent);
+    text-decoration: none;
   }
 
   &:active {

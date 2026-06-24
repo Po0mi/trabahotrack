@@ -1,6 +1,5 @@
 "use client";
 
-import { useRef, useEffect } from "react";
 import { generateBookmarklet } from "@/lib/bookmarklet";
 import "@/styles/components/modal.scss";
 
@@ -15,15 +14,7 @@ export default function BookmarkletModal({
   onClose,
   boardUrl,
 }: BookmarkletModalProps) {
-  const linkRef = useRef<HTMLAnchorElement>(null);
-
   const href = generateBookmarklet(boardUrl);
-
-  useEffect(() => {
-    if (linkRef.current) {
-      linkRef.current.href = href;
-    }
-  }, [href]);
 
   if (!isOpen) return null;
 
@@ -47,8 +38,12 @@ export default function BookmarkletModal({
           </p>
 
           <div className="bookmarklet-drag-zone">
-            {/* Plain, unstyled link - this is the key! */}
-            <a ref={linkRef} className="bookmarklet-plain-link">
+            {/* Direct href with suppressHydrationWarning */}
+            <a
+              href={href}
+              className="bookmarklet-link"
+              suppressHydrationWarning
+            >
               Add to TrabahoTrack
             </a>
             <span className="bookmarklet-drag-hint">
