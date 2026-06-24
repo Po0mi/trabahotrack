@@ -129,7 +129,7 @@ export default function JobCard({ job, tags, priority, rejectionReason, isDraggi
 
     const onEarlyMove = (ev: TouchEvent) => {
       const t = ev.touches[0];
-      if (t && Math.hypot(t.clientX - startX, t.clientY - startY) > 8) cancel();
+      if (t && Math.hypot(t.clientX - startX, t.clientY - startY) > 15) cancel();
     };
 
     const onEarlyEnd = () => cancel();

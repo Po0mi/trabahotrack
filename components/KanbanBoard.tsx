@@ -128,8 +128,20 @@ export default function KanbanBoard({
       const touch = e.touches[0];
       if (!touch) return;
       e.preventDefault();
-      setDragPos({ x: touch.clientX, y: touch.clientY });
-      const col = document.elementFromPoint(touch.clientX, touch.clientY)?.closest("[data-col-status]");
+      const { clientX, clientY } = touch;
+      setDragPos({ x: clientX, y: clientY });
+
+      // Auto-scroll when near viewport edges (important on mobile where columns stack vertically)
+      const EDGE = 80;
+      const MAX_SPEED = 14;
+      const vh = window.innerHeight;
+      if (clientY < EDGE) {
+        window.scrollBy(0, -((EDGE - clientY) / EDGE) * MAX_SPEED);
+      } else if (clientY > vh - EDGE) {
+        window.scrollBy(0, ((clientY - (vh - EDGE)) / EDGE) * MAX_SPEED);
+      }
+
+      const col = document.elementFromPoint(clientX, clientY)?.closest("[data-col-status]");
       setOverStatus(col?.getAttribute("data-col-status") ?? null);
     };
 

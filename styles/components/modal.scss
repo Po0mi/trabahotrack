@@ -635,6 +635,7 @@
   .modal-overlay {
     padding: 0.75rem;
     align-items: flex-end;
+    overflow-y: auto;
   }
 
   .modal-content {
@@ -643,6 +644,9 @@
       var(--radius-sm);
     max-width: 100%;
     width: 100%;
+    max-height: calc(100dvh - 1.5rem);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .modal-content--sm,
