@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { generateBookmarklet } from "@/lib/bookmarklet";
 import "@/styles/components/modal.scss";
 
@@ -14,7 +15,18 @@ export default function BookmarkletModal({
   onClose,
   boardUrl,
 }: BookmarkletModalProps) {
+  const [copied, setCopied] = useState(false);
   const href = generateBookmarklet(boardUrl);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // fallback for older browsers if needed
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -33,22 +45,34 @@ export default function BookmarkletModal({
 
         <div className="bookmarklet-body">
           <p className="bookmarklet-desc">
-            Drag the link below to your browser&apos;s bookmarks bar. Then click
-            it on any job listing to instantly add it to this board.
+            Modern browsers block dragging bookmarklets for security. Instead,
+            click the button below and follow the quick setup steps.
           </p>
 
           <div className="bookmarklet-drag-zone">
-            {/* Direct href with suppressHydrationWarning */}
-            <a
-              href={href}
-              className="bookmarklet-link"
-              suppressHydrationWarning
-            >
-              Add to TrabahoTrack
-            </a>
-            <span className="bookmarklet-drag-hint">
-              ↑ drag this to your bookmarks bar
-            </span>
+            <button className="bookmarklet-copy-btn" onClick={handleCopy}>
+              {copied ? "✓ Code Copied!" : "Copy Bookmarklet Code"}
+            </button>
+
+            <div className="bookmarklet-instructions">
+              <p>
+                <strong>1.</strong> Copy the code above
+              </p>
+              <p>
+                <strong>2.</strong> Open your bookmarks bar (Ctrl+Shift+B /
+                Cmd+Shift+B)
+              </p>
+              <p>
+                <strong>3.</strong> Create a new bookmark (Ctrl+D / Cmd+D)
+              </p>
+              <p>
+                <strong>4.</strong> Edit it & paste the code into the{" "}
+                <em>URL</em> field
+              </p>
+              <p>
+                <strong>5.</strong> Name it "Add to TrabahoTrack" & Save
+              </p>
+            </div>
           </div>
 
           <div className="bookmarklet-sites">
