@@ -23,8 +23,11 @@
   font-size: 1.1rem;
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: var(--text-primary);
   white-space: nowrap;
+  background: linear-gradient(90deg, #e11d1d 0%, #e11d1d 55%, #f5c800 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .navbar-logo-img {

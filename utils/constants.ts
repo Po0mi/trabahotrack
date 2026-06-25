@@ -12,6 +12,7 @@ export const STORAGE_KEYS = {
   JOB_TAGS: "trabahotrack_job_tags",
   JOB_PRIORITIES: "trabahotrack_job_priorities",
   REJECTION_REASONS: "trabahotrack_rejection_reasons",
+  INTERVIEW_DATES: "trabahotrack_interview_dates",
 };
 
 export const JOB_TAGS = [

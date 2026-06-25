@@ -55,6 +55,19 @@
     color: var(--text-primary);
   }
 
+  &--calendar {
+    color: var(--accent);
+    border-color: var(--accent);
+    font-weight: 600;
+
+    &:hover {
+      background: var(--accent);
+      color: #fff;
+      border-color: var(--accent);
+      box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+    }
+  }
+
   &--danger {
     color: var(--danger);
     border-color: color-mix(in srgb, var(--danger) 30%, transparent);
@@ -378,6 +391,12 @@
   }
 }
 
+// Board scroll wrapper
+.kanban-board-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 // Board grid
 .kanban-board {
   display: grid;
@@ -685,9 +704,7 @@
   }
 
   .control-bar {
-    top: 60px;
     padding: 0.625rem 1rem 0.5rem;
-    margin-bottom: 1rem;
   }
 
   .search-kbd {

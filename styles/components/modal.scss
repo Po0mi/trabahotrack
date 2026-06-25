@@ -9,6 +9,11 @@
   z-index: 1000;
   padding: 1.5rem;
   animation: overlayIn 0.15s ease-out;
+
+  @media (max-width: 640px) {
+    backdrop-filter: none;
+    background: rgba(16, 24, 40, 0.55);
+  }
 }
 
 .modal-content {
@@ -20,6 +25,7 @@
   padding: 1.75rem;
   box-shadow: var(--shadow-xl);
   animation: modalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
 }
 
 .modal-header {

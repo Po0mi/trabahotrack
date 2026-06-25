@@ -1,6 +1,14 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  useCallback,
+  lazy,
+  Suspense,
+} from "react";
+const CalendarView = lazy(() => import("./CalendarView"));
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { STORAGE_KEYS, JOB_TAGS } from "@/utils/constants";
 import { jobsApi } from "@/lib/jobs";
@@ -38,8 +46,15 @@ export default function KanbanBoard({
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [editingJob, setEditingJob] = useState<Job | null>(null);
   const [draggingJobId, setDraggingJobId] = useState<string | null>(null);
-  const [dragPos, setDragPos] = useState<{ x: number; y: number } | null>(null);
   const [overStatus, setOverStatus] = useState<string | null>(null);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+
+  // Drag ghost: position updated via direct DOM, never through React state
+  const ghostRef = useRef<HTMLDivElement>(null);
+  const rafRef = useRef<number>(0);
+  const pendingXRef = useRef(0);
+  const pendingYRef = useRef(0);
+  const lastOverRef = useRef<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
   const [jobTags, setJobTags] = useState<Record<string, string[]>>(() => {
@@ -50,15 +65,19 @@ export default function KanbanBoard({
       return {};
     }
   });
-  const [jobPriorities, setJobPriorities] = useState<Record<string, string>>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEYS.JOB_PRIORITIES);
-      return stored ? JSON.parse(stored) : {};
-    } catch {
-      return {};
-    }
-  });
-  const [rejectionReasons, setRejectionReasons] = useState<Record<string, string>>(() => {
+  const [jobPriorities, setJobPriorities] = useState<Record<string, string>>(
+    () => {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEYS.JOB_PRIORITIES);
+        return stored ? JSON.parse(stored) : {};
+      } catch {
+        return {};
+      }
+    },
+  );
+  const [rejectionReasons, setRejectionReasons] = useState<
+    Record<string, string>
+  >(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEYS.REJECTION_REASONS);
       return stored ? JSON.parse(stored) : {};
@@ -67,11 +86,26 @@ export default function KanbanBoard({
     }
   });
 
-  const [successPulseStatus, setSuccessPulseStatus] = useState<string | null>(null);
+  const [interviewDates, setInterviewDates] = useState<Record<string, string>>(
+    () => {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEYS.INTERVIEW_DATES);
+        return stored ? JSON.parse(stored) : {};
+      } catch {
+        return {};
+      }
+    },
+  );
+
+  const [successPulseStatus, setSuccessPulseStatus] = useState<string | null>(
+    null,
+  );
 
   const searchRef = useRef<HTMLInputElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
-  const handleDropRef = useRef<(jobId: string, status: string) => void>(() => {});
+  const handleDropRef = useRef<(jobId: string, status: string) => void>(
+    () => {},
+  );
 
   const params = useParams();
   const boardId = params.id as string;
@@ -87,22 +121,22 @@ export default function KanbanBoard({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const handleTagsChange = useCallback(
-    (jobId: string, tags: string[]) => {
-      setJobTags((prev) => {
-        const updated = { ...prev, [jobId]: tags };
-        localStorage.setItem(STORAGE_KEYS.JOB_TAGS, JSON.stringify(updated));
-        return updated;
-      });
-    },
-    [],
-  );
+  const handleTagsChange = useCallback((jobId: string, tags: string[]) => {
+    setJobTags((prev) => {
+      const updated = { ...prev, [jobId]: tags };
+      localStorage.setItem(STORAGE_KEYS.JOB_TAGS, JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
 
   const handlePriorityChange = useCallback(
     (jobId: string, priority: string) => {
       setJobPriorities((prev) => {
         const updated = { ...prev, [jobId]: priority };
-        localStorage.setItem(STORAGE_KEYS.JOB_PRIORITIES, JSON.stringify(updated));
+        localStorage.setItem(
+          STORAGE_KEYS.JOB_PRIORITIES,
+          JSON.stringify(updated),
+        );
         return updated;
       });
     },
@@ -113,92 +147,163 @@ export default function KanbanBoard({
     (jobId: string, reason: string) => {
       setRejectionReasons((prev) => {
         const updated = { ...prev, [jobId]: reason };
-        localStorage.setItem(STORAGE_KEYS.REJECTION_REASONS, JSON.stringify(updated));
+        localStorage.setItem(
+          STORAGE_KEYS.REJECTION_REASONS,
+          JSON.stringify(updated),
+        );
         return updated;
       });
     },
     [],
   );
 
-  const handleJobTouchStart = useCallback((jobId: string, startX: number, startY: number) => {
-    setDraggingJobId(jobId);
-    setDragPos({ x: startX, y: startY });
+  const handleInterviewDateChange = useCallback(
+    (jobId: string, date: string) => {
+      setInterviewDates((prev) => {
+        const updated = date
+          ? { ...prev, [jobId]: date }
+          : Object.fromEntries(
+              Object.entries(prev).filter(([k]) => k !== jobId),
+            );
+        localStorage.setItem(
+          STORAGE_KEYS.INTERVIEW_DATES,
+          JSON.stringify(updated),
+        );
+        return updated;
+      });
+    },
+    [],
+  );
 
-    const onMove = (e: TouchEvent) => {
-      const touch = e.touches[0];
-      if (!touch) return;
-      e.preventDefault();
-      const { clientX, clientY } = touch;
-      setDragPos({ x: clientX, y: clientY });
-
-      // Auto-scroll when near viewport edges (important on mobile where columns stack vertically)
-      const EDGE = 80;
-      const MAX_SPEED = 14;
-      const vh = window.innerHeight;
-      if (clientY < EDGE) {
-        window.scrollBy(0, -((EDGE - clientY) / EDGE) * MAX_SPEED);
-      } else if (clientY > vh - EDGE) {
-        window.scrollBy(0, ((clientY - (vh - EDGE)) / EDGE) * MAX_SPEED);
-      }
-
-      const col = document.elementFromPoint(clientX, clientY)?.closest("[data-col-status]");
-      setOverStatus(col?.getAttribute("data-col-status") ?? null);
-    };
-
-    const onEnd = (e: TouchEvent) => {
-      document.removeEventListener("touchmove", onMove);
-      document.removeEventListener("touchend", onEnd);
-      document.addEventListener("click", (ev) => ev.stopPropagation(), { capture: true, once: true });
-      const touch = e.changedTouches[0];
-      if (touch) {
-        const col = document.elementFromPoint(touch.clientX, touch.clientY)?.closest("[data-col-status]");
-        const status = col?.getAttribute("data-col-status");
-        if (status) handleDropRef.current(jobId, status);
-      }
-      setDraggingJobId(null);
-      setDragPos(null);
-      setOverStatus(null);
-    };
-
-    document.addEventListener("touchmove", onMove, { passive: false });
-    document.addEventListener("touchend", onEnd);
+  const moveGhost = useCallback((x: number, y: number) => {
+    if (ghostRef.current) {
+      ghostRef.current.style.left = `${x + 14}px`;
+      ghostRef.current.style.top = `${y - 14}px`;
+    }
+    // Throttle overStatus updates to once per animation frame
+    pendingXRef.current = x;
+    pendingYRef.current = y;
+    if (!rafRef.current) {
+      rafRef.current = requestAnimationFrame(() => {
+        rafRef.current = 0;
+        const px = pendingXRef.current;
+        const py = pendingYRef.current;
+        const col = document
+          .elementFromPoint(px, py)
+          ?.closest("[data-col-status]");
+        const newStatus = col?.getAttribute("data-col-status") ?? null;
+        if (newStatus !== lastOverRef.current) {
+          lastOverRef.current = newStatus;
+          setOverStatus(newStatus);
+        }
+      });
+    }
   }, []);
 
-  const handleJobDragStart = useCallback((jobId: string, clientX: number, clientY: number) => {
-    let started = false;
-
-    const onMove = (e: MouseEvent) => {
-      if (!started) {
-        if (Math.hypot(e.clientX - clientX, e.clientY - clientY) < 5) return;
-        started = true;
-        setDraggingJobId(jobId);
-        document.body.style.cursor = "grabbing";
-        document.body.style.userSelect = "none";
-      }
-      setDragPos({ x: e.clientX, y: e.clientY });
-      const col = document.elementFromPoint(e.clientX, e.clientY)?.closest("[data-col-status]");
-      setOverStatus(col?.getAttribute("data-col-status") ?? null);
-    };
-
-    const onUp = (e: MouseEvent) => {
-      document.removeEventListener("mousemove", onMove);
-      document.removeEventListener("mouseup", onUp);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-      if (started) {
-        document.addEventListener("click", (ev) => ev.stopPropagation(), { capture: true, once: true });
-        const col = document.elementFromPoint(e.clientX, e.clientY)?.closest("[data-col-status]");
-        const status = col?.getAttribute("data-col-status");
-        if (status) handleDropRef.current(jobId, status);
-      }
-      setDraggingJobId(null);
-      setDragPos(null);
-      setOverStatus(null);
-    };
-
-    document.addEventListener("mousemove", onMove);
-    document.addEventListener("mouseup", onUp);
+  const showGhost = useCallback(() => {
+    if (ghostRef.current) ghostRef.current.style.display = "block";
   }, []);
+
+  const hideGhost = useCallback(() => {
+    if (ghostRef.current) ghostRef.current.style.display = "none";
+    if (rafRef.current) {
+      cancelAnimationFrame(rafRef.current);
+      rafRef.current = 0;
+    }
+    lastOverRef.current = null;
+  }, []);
+
+  const handleJobTouchStart = useCallback(
+    (jobId: string, startX: number, startY: number) => {
+      setDraggingJobId(jobId);
+      moveGhost(startX, startY);
+      showGhost();
+
+      const onMove = (e: TouchEvent) => {
+        const touch = e.touches[0];
+        if (!touch) return;
+        e.preventDefault();
+        const { clientX, clientY } = touch;
+        moveGhost(clientX, clientY);
+
+        const EDGE = 80;
+        const MAX_SPEED = 14;
+        const vh = window.innerHeight;
+        if (clientY < EDGE) {
+          window.scrollBy(0, -((EDGE - clientY) / EDGE) * MAX_SPEED);
+        } else if (clientY > vh - EDGE) {
+          window.scrollBy(0, ((clientY - (vh - EDGE)) / EDGE) * MAX_SPEED);
+        }
+      };
+
+      const onEnd = (e: TouchEvent) => {
+        document.removeEventListener("touchmove", onMove);
+        document.removeEventListener("touchend", onEnd);
+        document.addEventListener("click", (ev) => ev.stopPropagation(), {
+          capture: true,
+          once: true,
+        });
+        const touch = e.changedTouches[0];
+        if (touch) {
+          const col = document
+            .elementFromPoint(touch.clientX, touch.clientY)
+            ?.closest("[data-col-status]");
+          const status = col?.getAttribute("data-col-status");
+          if (status) handleDropRef.current(jobId, status);
+        }
+        hideGhost();
+        setDraggingJobId(null);
+        setOverStatus(null);
+      };
+
+      document.addEventListener("touchmove", onMove, { passive: false });
+      document.addEventListener("touchend", onEnd);
+    },
+    [moveGhost, showGhost, hideGhost],
+  );
+
+  const handleJobDragStart = useCallback(
+    (jobId: string, clientX: number, clientY: number) => {
+      let started = false;
+
+      const onMove = (e: MouseEvent) => {
+        if (!started) {
+          if (Math.hypot(e.clientX - clientX, e.clientY - clientY) < 5) return;
+          started = true;
+          setDraggingJobId(jobId);
+          showGhost();
+          document.body.style.cursor = "grabbing";
+          document.body.style.userSelect = "none";
+        }
+        moveGhost(e.clientX, e.clientY);
+      };
+
+      const onUp = (e: MouseEvent) => {
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+        if (started) {
+          document.addEventListener("click", (ev) => ev.stopPropagation(), {
+            capture: true,
+            once: true,
+          });
+          const col = document
+            .elementFromPoint(e.clientX, e.clientY)
+            ?.closest("[data-col-status]");
+          const status = col?.getAttribute("data-col-status");
+          if (status) handleDropRef.current(jobId, status);
+        }
+        hideGhost();
+        setDraggingJobId(null);
+        setOverStatus(null);
+      };
+
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    },
+    [moveGhost, showGhost, hideGhost],
+  );
 
   // Stats
   const total = jobs.length;
@@ -207,8 +312,7 @@ export default function KanbanBoard({
   const rejectionCount = jobs.filter((j) => j.status === "Rejected").length;
   const interviewRate =
     total > 0 ? Math.round(((interviewCount + offerCount) / total) * 100) : 0;
-  const offerRate =
-    total > 0 ? Math.round((offerCount / total) * 100) : 0;
+  const offerRate = total > 0 ? Math.round((offerCount / total) * 100) : 0;
 
   // Ghost warning: Applied jobs older than 7 days
   const ghostingCount = jobs.filter(
@@ -225,7 +329,9 @@ export default function KanbanBoard({
       rejectionStageCounts[stage] = (rejectionStageCounts[stage] ?? 0) + 1;
     }
   }
-  const topRejectionStage = Object.entries(rejectionStageCounts).sort((a, b) => b[1] - a[1])[0];
+  const topRejectionStage = Object.entries(rejectionStageCounts).sort(
+    (a, b) => b[1] - a[1],
+  )[0];
 
   // Motivational tagline
   const motivationalTagline = (() => {
@@ -249,8 +355,7 @@ export default function KanbanBoard({
     )
     .filter(
       (j) =>
-        !activeTagFilter ||
-        (jobTags[j.id] ?? []).includes(activeTagFilter),
+        !activeTagFilter || (jobTags[j.id] ?? []).includes(activeTagFilter),
     );
 
   // Keyboard shortcuts
@@ -261,9 +366,18 @@ export default function KanbanBoard({
         tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
 
       if (e.key === "Escape") {
-        if (editingJob) { setEditingJob(null); return; }
-        if (isAddModalOpen) { setIsAddModalOpen(false); return; }
-        if (activeTagFilter) { setActiveTagFilter(null); return; }
+        if (editingJob) {
+          setEditingJob(null);
+          return;
+        }
+        if (isAddModalOpen) {
+          setIsAddModalOpen(false);
+          return;
+        }
+        if (activeTagFilter) {
+          setActiveTagFilter(null);
+          return;
+        }
         return;
       }
       if (isEditable) return;
@@ -325,7 +439,15 @@ export default function KanbanBoard({
 
   // Export as CSV
   const handleExport = () => {
-    const headers = ["company", "role", "status", "job_url", "salary", "notes", "created_at"];
+    const headers = [
+      "company",
+      "role",
+      "status",
+      "job_url",
+      "salary",
+      "notes",
+      "created_at",
+    ];
     const escape = (val: string | null | undefined) => {
       const s = val ?? "";
       return `"${s.replace(/"/g, '""')}"`;
@@ -401,7 +523,9 @@ export default function KanbanBoard({
 
   // Count how many jobs have each tag (for showing active dots in filter bar)
   const tagCounts = JOB_TAGS.reduce<Record<string, number>>((acc, tag) => {
-    acc[tag.id] = jobs.filter((j) => (jobTags[j.id] ?? []).includes(tag.id)).length;
+    acc[tag.id] = jobs.filter((j) =>
+      (jobTags[j.id] ?? []).includes(tag.id),
+    ).length;
     return acc;
   }, {});
 
@@ -410,7 +534,7 @@ export default function KanbanBoard({
       {/* Header row */}
       <div className="kanban-header">
         <div className="kanban-title-wrap">
-          <h1 className="kanban-title">My Applications</h1>
+          <h1 className="kanban-title">Stay on top of every application</h1>
           <span className="kanban-tagline">{motivationalTagline}</span>
         </div>
         <div className="kanban-actions">
@@ -422,8 +546,18 @@ export default function KanbanBoard({
             onChange={handleImport}
           />
           <button
+            className="btn-toolbar btn-toolbar--calendar"
+            onClick={() => setIsCalendarOpen(true)}
+            title="View calendar"
+          >
+            <i className="fas fa-calendar-days" />
+            Calendar
+          </button>
+          <button
             className="btn-toolbar btn-toolbar--danger"
-            onClick={() => { if (jobs.length > 0) setIsResetModalOpen(true); }}
+            onClick={() => {
+              if (jobs.length > 0) setIsResetModalOpen(true);
+            }}
             title="Delete all jobs and reset the board"
           >
             <i className="fas fa-trash" />
@@ -437,11 +571,18 @@ export default function KanbanBoard({
             <i className="fas fa-upload" />
             Import
           </button>
-          <button className="btn-toolbar" onClick={handleExport} title="Export all jobs as JSON">
+          <button
+            className="btn-toolbar"
+            onClick={handleExport}
+            title="Export all jobs as JSON"
+          >
             <i className="fas fa-download" />
             Export
           </button>
-          <button className="btn-add-job" onClick={() => setIsAddModalOpen(true)}>
+          <button
+            className="btn-add-job"
+            onClick={() => setIsAddModalOpen(true)}
+          >
             <i className="fas fa-plus" />
             Add Job
             <kbd className="kbd-hint">N</kbd>
@@ -460,7 +601,9 @@ export default function KanbanBoard({
         </div>
         <div className="stat-divider" />
         <div className="stat-card">
-          <span className="stat-value stat-value--interview">{interviewRate}%</span>
+          <span className="stat-value stat-value--interview">
+            {interviewRate}%
+          </span>
           <span className="stat-label">
             <i className="fas fa-comments stat-label-icon" />
             Interview Rate
@@ -476,20 +619,34 @@ export default function KanbanBoard({
         </div>
         <div className="stat-divider" />
         <div className="stat-card">
-          <span className="stat-value stat-value--rejected">{rejectionCount}</span>
+          <span className="stat-value stat-value--rejected">
+            {rejectionCount}
+          </span>
           <span className="stat-label">
             <i className="fas fa-circle-xmark stat-label-icon" />
             Rejections
             {topRejectionStage && (
-              <span className="stat-insight" title={`Most common: ${topRejectionStage[0]}`}>
-                · mostly {topRejectionStage[0].replace("resume", "resume screen").replace("technical", "tech interview").replace("final", "final round").replace("no-response", "no response").replace("offer", "offer stage").replace("phone", "phone screen")}
+              <span
+                className="stat-insight"
+                title={`Most common: ${topRejectionStage[0]}`}
+              >
+                · mostly{" "}
+                {topRejectionStage[0]
+                  .replace("resume", "resume screen")
+                  .replace("technical", "tech interview")
+                  .replace("final", "final round")
+                  .replace("no-response", "no response")
+                  .replace("offer", "offer stage")
+                  .replace("phone", "phone screen")}
               </span>
             )}
           </span>
         </div>
         <div className="stat-divider" />
         <div className="stat-card">
-          <span className={`stat-value${ghostingCount > 0 ? " stat-value--ghost" : ""}`}>
+          <span
+            className={`stat-value${ghostingCount > 0 ? " stat-value--ghost" : ""}`}
+          >
             {ghostingCount}
           </span>
           <span className="stat-label">
@@ -499,7 +656,7 @@ export default function KanbanBoard({
         </div>
       </div>
 
-      {/* Control bar: search + tag filters (sticky) */}
+      {/* Control bar: search + tag filters */}
       <div className="control-bar">
         <div className="search-bar">
           <i className="fas fa-magnifying-glass search-icon" />
@@ -512,7 +669,11 @@ export default function KanbanBoard({
             onChange={(e) => setSearchQuery(e.target.value)}
           />
           {searchQuery && (
-            <button className="search-clear" onClick={() => setSearchQuery("")} aria-label="Clear search">
+            <button
+              className="search-clear"
+              onClick={() => setSearchQuery("")}
+              aria-label="Clear search"
+            >
               <i className="fas fa-xmark" />
             </button>
           )}
@@ -540,7 +701,10 @@ export default function KanbanBoard({
           {(activeTagFilter || searchQuery) && (
             <button
               className="tag-filter-clear"
-              onClick={() => { setActiveTagFilter(null); setSearchQuery(""); }}
+              onClick={() => {
+                setActiveTagFilter(null);
+                setSearchQuery("");
+              }}
             >
               <i className="fas fa-xmark" />
               {activeTagFilter && searchQuery ? "Clear all" : "Clear filter"}
@@ -550,28 +714,32 @@ export default function KanbanBoard({
       </div>
 
       {/* Board columns */}
-      <div className="kanban-board">
-        {JOB_STATUSES.map((status) => {
-          const columnJobs = filteredJobs.filter((job) => job.status === status);
-          return (
-            <Column
-              key={status}
-              title={status}
-              jobs={columnJobs}
-              jobTags={jobTags}
-              jobPriorities={jobPriorities}
-              rejectionReasons={rejectionReasons}
-              isActive={overStatus === status}
-              isPulsing={successPulseStatus === status}
-              onDeleteJob={onDeleteJob}
-              onEditJob={setEditingJob}
-              draggingJobId={draggingJobId}
-              onJobDragStart={handleJobDragStart}
-              onJobTouchDragStart={handleJobTouchStart}
-              onMoveCard={handleDrop}
-            />
-          );
-        })}
+      <div className="kanban-board-scroll">
+        <div className="kanban-board">
+          {JOB_STATUSES.map((status) => {
+            const columnJobs = filteredJobs.filter(
+              (job) => job.status === status,
+            );
+            return (
+              <Column
+                key={status}
+                title={status}
+                jobs={columnJobs}
+                jobTags={jobTags}
+                jobPriorities={jobPriorities}
+                rejectionReasons={rejectionReasons}
+                isActive={overStatus === status}
+                isPulsing={successPulseStatus === status}
+                onDeleteJob={onDeleteJob}
+                onEditJob={setEditingJob}
+                draggingJobId={draggingJobId}
+                onJobDragStart={handleJobDragStart}
+                onJobTouchDragStart={handleJobTouchStart}
+                onMoveCard={handleDrop}
+              />
+            );
+          })}
+        </div>
       </div>
 
       <AddJobModal
@@ -580,6 +748,7 @@ export default function KanbanBoard({
         onJobAdded={onJobAdded}
         onTagsChange={handleTagsChange}
         onPriorityChange={handlePriorityChange}
+        onInterviewDateChange={handleInterviewDateChange}
         boardId={boardId}
         accessToken={accessToken}
         initialCompany={prefill?.company}
@@ -595,6 +764,16 @@ export default function KanbanBoard({
         />
       )}
 
+      {isCalendarOpen && (
+        <Suspense fallback={null}>
+          <CalendarView
+            jobs={jobs}
+            interviewDates={interviewDates}
+            onClose={() => setIsCalendarOpen(false)}
+          />
+        </Suspense>
+      )}
+
       {editingJob && (
         <EditJobModal
           key={editingJob.id}
@@ -606,39 +785,67 @@ export default function KanbanBoard({
           tags={jobTags[editingJob.id] ?? []}
           onTagsChange={(tags) => handleTagsChange(editingJob.id, tags)}
           priority={jobPriorities[editingJob.id] ?? ""}
-          onPriorityChange={(priority) => handlePriorityChange(editingJob.id, priority)}
+          onPriorityChange={(priority) =>
+            handlePriorityChange(editingJob.id, priority)
+          }
           rejectionReason={rejectionReasons[editingJob.id] ?? ""}
-          onRejectionReasonChange={(reason) => handleRejectionReasonChange(editingJob.id, reason)}
+          onRejectionReasonChange={(reason) =>
+            handleRejectionReasonChange(editingJob.id, reason)
+          }
+          interviewDate={interviewDates[editingJob.id] ?? ""}
+          onInterviewDateChange={(date) =>
+            handleInterviewDateChange(editingJob.id, date)
+          }
         />
       )}
 
-      {/* Drag ghost — follows cursor while dragging */}
-      {draggingJobId && dragPos && (() => {
-        const job = jobs.find((j) => j.id === draggingJobId);
-        if (!job) return null;
+      {/* Drag ghost — always in DOM, shown/hidden and positioned via ref (no React re-renders during drag) */}
+      {(() => {
+        const job = draggingJobId
+          ? jobs.find((j) => j.id === draggingJobId)
+          : null;
         return (
           <div
+            ref={ghostRef}
+            aria-hidden
             style={{
+              display: "none",
               position: "fixed",
-              left: dragPos.x + 14,
-              top: dragPos.y - 14,
               width: 240,
               background: "var(--surface)",
               border: "1px solid var(--border-hover)",
               borderLeft: "3px solid var(--accent)",
               borderRadius: "var(--radius-sm)",
               padding: "0.875rem",
-              boxShadow: "0 24px 50px rgba(0,0,0,0.22), 0 6px 14px rgba(79,70,229,0.14)",
+              boxShadow:
+                "0 24px 50px rgba(0,0,0,0.22), 0 6px 14px rgba(79,70,229,0.14)",
               transform: "rotate(2.5deg) scale(1.02)",
               pointerEvents: "none",
               zIndex: 9999,
             }}
           >
-            <div style={{ fontWeight: 600, fontSize: "0.9rem", color: "var(--text-primary)", lineHeight: 1.3, marginBottom: "0.25rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {job.company}
+            <div
+              style={{
+                fontWeight: 600,
+                fontSize: "0.9rem",
+                color: "var(--text-primary)",
+                lineHeight: 1.3,
+                marginBottom: "0.25rem",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {job?.company}
             </div>
-            <div style={{ fontSize: "0.8rem", color: "var(--text-secondary)", lineHeight: 1.4 }}>
-              {job.role}
+            <div
+              style={{
+                fontSize: "0.8rem",
+                color: "var(--text-secondary)",
+                lineHeight: 1.4,
+              }}
+            >
+              {job?.role}
             </div>
           </div>
         );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { jobsApi } from "@/lib/jobs";
 import { parseJobUrl } from "@/lib/parseJobUrl";
 import type { Job, JobStatus } from "@/types/job";
@@ -19,6 +19,8 @@ interface EditJobModalProps {
   onPriorityChange: (priority: string) => void;
   rejectionReason?: string;
   onRejectionReasonChange: (reason: string) => void;
+  interviewDate?: string;
+  onInterviewDateChange: (date: string) => void;
 }
 
 export default function EditJobModal({
@@ -33,6 +35,8 @@ export default function EditJobModal({
   onPriorityChange,
   rejectionReason = "",
   onRejectionReasonChange,
+  interviewDate = "",
+  onInterviewDateChange,
 }: EditJobModalProps) {
   const [company, setCompany] = useState(job.company);
   const [role, setRole] = useState(job.role);
@@ -40,11 +44,31 @@ export default function EditJobModal({
   const [jobUrl, setJobUrl] = useState(job.job_url ?? "");
   const [salary, setSalary] = useState(job.salary ?? "");
   const [notes, setNotes] = useState(job.notes ?? "");
+  const [localInterviewDate, setLocalInterviewDate] = useState(interviewDate);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [urlHint, setUrlHint] = useState<string | null>(null);
   const [localPriority, setLocalPriority] = useState(priority);
   const [localRejectionReason, setLocalRejectionReason] = useState(rejectionReason);
+
+  const modalContentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv || window.innerWidth > 480) return;
+
+    const update = () => {
+      if (!modalContentRef.current) return;
+      modalContentRef.current.style.maxHeight = `${vv.height - 24}px`;
+    };
+
+    update();
+    vv.addEventListener("resize", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      if (modalContentRef.current) modalContentRef.current.style.maxHeight = "";
+    };
+  }, []);
 
   const handleJobUrlPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     const pasted = e.clipboardData.getData("text");
@@ -82,6 +106,11 @@ export default function EditJobModal({
     onRejectionReasonChange(value);
   };
 
+  const handleInterviewDateChange = (value: string) => {
+    setLocalInterviewDate(value);
+    onInterviewDateChange(value);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -111,7 +140,7 @@ export default function EditJobModal({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content" ref={modalContentRef} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div>
             <h2>Edit Application</h2>
@@ -216,15 +245,27 @@ export default function EditJobModal({
             {urlHint && <p className="form-hint">✨ {urlHint}</p>}
           </div>
 
-          <div className="form-group">
-            <label htmlFor="edit-salary">Salary</label>
-            <input
-              id="edit-salary"
-              type="text"
-              value={salary}
-              onChange={(e) => setSalary(e.target.value)}
-              placeholder="e.g. $80k–100k, ₱50,000/mo"
-            />
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="edit-salary">Salary</label>
+              <input
+                id="edit-salary"
+                type="text"
+                value={salary}
+                onChange={(e) => setSalary(e.target.value)}
+                placeholder="e.g. $80k–100k, ₱50,000/mo"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="edit-interviewDate">Interview Date</label>
+              <input
+                id="edit-interviewDate"
+                type="date"
+                value={localInterviewDate}
+                onChange={(e) => handleInterviewDateChange(e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="form-group">
@@ -235,6 +276,9 @@ export default function EditJobModal({
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Referral contact, interview notes…"
               rows={4}
+              onFocus={(e) => {
+                setTimeout(() => e.target.scrollIntoView({ behavior: "smooth", block: "nearest" }), 320);
+              }}
             />
           </div>
 

@@ -1,0 +1,289 @@
+.mcal {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.875rem 0.875rem 0.75rem;
+  box-shadow: var(--shadow-xs);
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  width: 100%;
+}
+
+// Navigation header
+.mcal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem;
+  margin-bottom: 0.125rem;
+}
+
+.mcal-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--border);
+  background: transparent;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 0.65rem;
+  transition: all 0.12s ease;
+  flex-shrink: 0;
+
+  &:hover {
+    background: var(--surface-hover);
+    border-color: var(--border-hover);
+    color: var(--text-secondary);
+  }
+}
+
+.mcal-month {
+  flex: 1;
+  text-align: center;
+  font-family: var(--font-brand);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.2rem 0.25rem;
+  border-radius: var(--radius-sm);
+  transition: background 0.1s ease;
+  white-space: nowrap;
+
+  &:hover {
+    background: var(--bg);
+  }
+}
+
+// 7-column grid (days of week + cells)
+.mcal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+}
+
+.mcal-dow {
+  text-align: center;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  padding: 0.1rem 0 0.25rem;
+}
+
+.mcal-cell {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 0.1s ease;
+  position: relative;
+  min-height: 28px;
+  user-select: none;
+
+  &--pad {
+    cursor: default;
+    pointer-events: none;
+  }
+
+  &:not(&--pad):hover {
+    background: var(--surface-hover);
+  }
+
+  &--today {
+    .mcal-num {
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+    }
+  }
+
+  &--sel {
+    background: color-mix(in srgb, var(--accent) 10%, transparent);
+    outline: 1.5px solid color-mix(in srgb, var(--accent) 50%, transparent);
+  }
+}
+
+.mcal-num {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.mcal-dots {
+  display: flex;
+  gap: 2px;
+  margin-top: 2px;
+}
+
+.mcal-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: inline-block;
+
+  &--a { background: var(--applied-accent); }
+  &--i { background: var(--interview-accent); }
+}
+
+// Legend
+.mcal-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  justify-content: center;
+  padding: 0.125rem 0;
+  border-top: 1px solid var(--border);
+  padding-top: 0.5rem;
+
+  span {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.68rem;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+}
+
+// Selected date events
+.mcal-events {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.625rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.mcal-events-date {
+  font-size: 0.73rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  letter-spacing: 0.01em;
+}
+
+.mcal-events-empty {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.mcal-events-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.mcal-ev {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.3rem 0.4rem;
+  border-radius: 5px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+
+  &--i {
+    background: color-mix(in srgb, var(--interview-accent) 6%, transparent);
+    border-color: color-mix(in srgb, var(--interview-accent) 22%, transparent);
+  }
+}
+
+.mcal-ev-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+}
+
+.mcal-ev-co {
+  font-size: 0.73rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mcal-ev-role {
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mcal-ev-badge {
+  font-size: 0.6rem;
+  font-weight: 600;
+  padding: 0.1rem 0.35rem;
+  border-radius: 20px;
+  flex-shrink: 0;
+  white-space: nowrap;
+
+  &--a {
+    background: var(--applied-bg);
+    color: var(--applied-color);
+    border: 1px solid var(--applied-border);
+  }
+
+  &--i {
+    background: var(--interview-bg);
+    color: var(--interview-color);
+    border: 1px solid var(--interview-border);
+  }
+}
+
+// Full calendar button
+.mcal-full-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  width: 100%;
+  padding: 0.4rem;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 0.73rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  letter-spacing: 0.01em;
+
+  &:hover {
+    background: var(--surface-hover);
+    border-color: var(--border-hover);
+    color: var(--text-secondary);
+  }
+
+  i {
+    font-size: 0.65rem;
+  }
+}

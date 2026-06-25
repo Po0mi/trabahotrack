@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { jobsApi } from "@/lib/jobs";
 import { parseJobUrl } from "@/lib/parseJobUrl";
 import type { Job, JobStatus } from "@/types/job";
@@ -13,6 +13,7 @@ interface AddJobModalProps {
   onJobAdded: (job: Job) => void;
   onTagsChange: (jobId: string, tags: string[]) => void;
   onPriorityChange: (jobId: string, priority: string) => void;
+  onInterviewDateChange: (jobId: string, date: string) => void;
   boardId: string;
   accessToken: string;
   initialCompany?: string;
@@ -26,6 +27,7 @@ export default function AddJobModal({
   onJobAdded,
   onTagsChange,
   onPriorityChange,
+  onInterviewDateChange,
   boardId,
   accessToken,
   initialCompany = "",
@@ -38,11 +40,33 @@ export default function AddJobModal({
   const [jobUrl, setJobUrl] = useState(initialUrl);
   const [salary, setSalary] = useState("");
   const [notes, setNotes] = useState("");
+  const [interviewDate, setInterviewDate] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedPriority, setSelectedPriority] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [urlHint, setUrlHint] = useState<string | null>(null);
+
+  const modalContentRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const vv = window.visualViewport;
+    if (!vv || window.innerWidth > 480) return;
+
+    const update = () => {
+      if (!modalContentRef.current) return;
+      modalContentRef.current.style.maxHeight = `${vv.height - 24}px`;
+    };
+
+    update();
+    vv.addEventListener("resize", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      if (modalContentRef.current) modalContentRef.current.style.maxHeight = "";
+    };
+  }, [isOpen]);
+
   const handleTagToggle = (tagId: string) => {
     setSelectedTags((prev) =>
       prev.includes(tagId) ? prev.filter((t) => t !== tagId) : [...prev, tagId],
@@ -92,6 +116,7 @@ export default function AddJobModal({
       onJobAdded(newJob);
       if (selectedTags.length > 0) onTagsChange(newJobId, selectedTags);
       if (selectedPriority) onPriorityChange(newJobId, selectedPriority);
+      if (interviewDate) onInterviewDateChange(newJobId, interviewDate);
       handleReset();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to add job");
@@ -107,6 +132,7 @@ export default function AddJobModal({
     setJobUrl("");
     setSalary("");
     setNotes("");
+    setInterviewDate("");
     setSelectedTags([]);
     setSelectedPriority("");
     setError(null);
@@ -120,7 +146,7 @@ export default function AddJobModal({
 
   return (
     <div className="modal-overlay" onClick={handleClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-content" ref={modalContentRef} onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Add Application</h2>
           <button
@@ -211,15 +237,27 @@ export default function AddJobModal({
             </div>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="salary">Salary</label>
-            <input
-              id="salary"
-              type="text"
-              value={salary}
-              onChange={(e) => setSalary(e.target.value)}
-              placeholder="e.g. $80k–100k, ₱50,000/mo"
-            />
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="salary">Salary</label>
+              <input
+                id="salary"
+                type="text"
+                value={salary}
+                onChange={(e) => setSalary(e.target.value)}
+                placeholder="e.g. $80k–100k, ₱50,000/mo"
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="interviewDate">Interview Date</label>
+              <input
+                id="interviewDate"
+                type="date"
+                value={interviewDate}
+                onChange={(e) => setInterviewDate(e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="form-group">
@@ -230,6 +268,9 @@ export default function AddJobModal({
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Referral contact, interview notes…"
               rows={3}
+              onFocus={(e) => {
+                setTimeout(() => e.target.scrollIntoView({ behavior: "smooth", block: "nearest" }), 320);
+              }}
             />
           </div>
 
