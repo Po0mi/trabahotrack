@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import type { Job } from "@/types/job";
-import { JOB_TAGS, JOB_PRIORITIES, REJECTION_STAGES, JOB_STATUSES } from "@/utils/constants";
+import type { Job, RoundEntry } from "@/types/job";
+import { JOB_TAGS, JOB_PRIORITIES, REJECTION_STAGES, JOB_STATUSES, DEFAULT_OFFER_CHECKLIST } from "@/utils/constants";
 import "@/styles/components/jobcard.scss";
 
 interface JobCardProps {
@@ -10,12 +10,17 @@ interface JobCardProps {
   tags: string[];
   priority?: string;
   rejectionReason?: string;
+  avgResponseDays?: number;
+  rounds: RoundEntry[];
+  offerChecklist: Record<string, boolean>;
   isDragging?: boolean;
   onDeleteJob: (jobId: string) => void;
   onEditJob: (job: Job) => void;
-  onDragStart?: (jobId: string, x: number, y: number) => void;
-  onTouchDragStart?: (jobId: string, x: number, y: number) => void;
+  onDragStart?: (jobId: string, x: number, y: number, grabX: number, grabY: number) => void;
+  onTouchDragStart?: (jobId: string, x: number, y: number, grabX: number, grabY: number) => void;
   onMoveCard?: (jobId: string, newStatus: string) => void;
+  onRoundsChange?: (rounds: RoundEntry[]) => void;
+  onOfferChecklistChange?: (checklist: Record<string, boolean>) => void;
 }
 
 const STALE_MS = 14 * 24 * 60 * 60 * 1000;
@@ -67,9 +72,12 @@ function getLogoSrc(job: Job): string {
   return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
 }
 
-export default function JobCard({ job, tags, priority, rejectionReason, isDragging, onDeleteJob, onEditJob, onDragStart, onTouchDragStart, onMoveCard }: JobCardProps) {
+export default function JobCard({ job, tags, priority, rejectionReason, avgResponseDays, rounds, offerChecklist, isDragging, onDeleteJob, onEditJob, onDragStart, onTouchDragStart, onMoveCard, onRoundsChange, onOfferChecklistChange }: JobCardProps) {
   const [logoVisible, setLogoVisible] = useState(true);
   const [expanded, setExpanded] = useState(false);
+  const [showRoundForm, setShowRoundForm] = useState(false);
+  const [roundNotes, setRoundNotes] = useState("");
+  const [roundInterviewer, setRoundInterviewer] = useState("");
   const cardRef = useRef<HTMLDivElement>(null);
   const elapsed = Date.now() - new Date(job.created_at).getTime();
   const isStale = job.status === "Applied" && elapsed > STALE_MS;
@@ -112,7 +120,8 @@ export default function JobCard({ job, tags, priority, rejectionReason, isDraggi
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.button !== 0) return;
-    onDragStart?.(job.id, e.clientX, e.clientY);
+    const rect = e.currentTarget.getBoundingClientRect();
+    onDragStart?.(job.id, e.clientX, e.clientY, e.clientX - rect.left, e.clientY - rect.top);
   };
 
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
@@ -120,6 +129,9 @@ export default function JobCard({ job, tags, priority, rejectionReason, isDraggi
     if (!touch) return;
     const startX = touch.clientX;
     const startY = touch.clientY;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const grabX = startX - rect.left;
+    const grabY = startY - rect.top;
     const el = e.currentTarget;
     let active = true;
 
@@ -149,7 +161,7 @@ export default function JobCard({ job, tags, priority, rejectionReason, isDraggi
       el.removeEventListener("touchmove", onEarlyMove);
       el.removeEventListener("touchend", onEarlyEnd);
       el.classList.remove("job-card--pressing");
-      onTouchDragStart?.(job.id, startX, startY);
+      onTouchDragStart?.(job.id, startX, startY, grabX, grabY);
     }, 250);
   };
 
@@ -238,11 +250,21 @@ export default function JobCard({ job, tags, priority, rejectionReason, isDraggi
         </p>
       )}
 
-      {job.salary && (
-        <p className="job-card-salary">
-          <i className="fas fa-money-bill-wave" />
-          {job.salary}
-        </p>
+      {(job.salary || (avgResponseDays !== undefined && job.status === "Applied")) && (
+        <div className="job-card-meta-row">
+          {avgResponseDays !== undefined && job.status === "Applied" && (
+            <span className="job-card-response-badge" title="Average days until this company replies">
+              <i className="fas fa-clock" />
+              Avg reply: {avgResponseDays}d
+            </span>
+          )}
+          {job.salary && (
+            <span className="job-card-salary">
+              <i className="fas fa-money-bill-wave" />
+              {job.salary}
+            </span>
+          )}
+        </div>
       )}
 
       {job.notes && (
@@ -264,7 +286,13 @@ export default function JobCard({ job, tags, priority, rejectionReason, isDraggi
         ) : (
           <span />
         )}
-        <span className="job-card-time">{timeSince(job.created_at)}</span>
+        <div className="job-card-footer-meta">
+          <span className="job-card-date">
+            <i className="fas fa-calendar-days" />
+            {formatDate(job.created_at)}
+          </span>
+          <span className="job-card-time">{timeSince(job.created_at)}</span>
+        </div>
         <span className={`job-card-chevron-btn${expanded ? " job-card-chevron-btn--open" : ""}`}>
           <i className="fas fa-chevron-down" />
         </span>
@@ -275,6 +303,120 @@ export default function JobCard({ job, tags, priority, rejectionReason, isDraggi
         <div className="job-card-drawer-inner">
           <div className="job-card-drawer-content">
             <div className="job-card-drawer-sep" />
+
+            {/* Feature 2: Interview Round History */}
+            {job.status === "Interview" && (
+              <div className="job-card-rounds" onClick={(e) => e.stopPropagation()}>
+                <div className="job-card-rounds-header">
+                  <span className="job-card-rounds-title">
+                    <i className="fas fa-layer-group" />
+                    Round History
+                  </span>
+                  <button
+                    className="job-card-rounds-add-btn"
+                    onClick={() => setShowRoundForm((v) => !v)}
+                  >
+                    <i className="fas fa-plus" />
+                    Add Round
+                  </button>
+                </div>
+                {rounds.length === 0 && !showRoundForm && (
+                  <p className="job-card-rounds-empty">No rounds logged yet.</p>
+                )}
+                {rounds.map((r) => (
+                  <div key={r.id} className="job-card-round-entry">
+                    <div className="job-card-round-entry-header">
+                      <span className="job-card-round-num">Round {r.round}</span>
+                      {r.interviewer && <span className="job-card-round-interviewer">{r.interviewer}</span>}
+                      <span className="job-card-round-date">{formatDate(r.date)}</span>
+                      <button
+                        className="job-card-round-delete"
+                        onClick={() => onRoundsChange?.(rounds.filter((x) => x.id !== r.id))}
+                        title="Remove"
+                      >
+                        <i className="fas fa-xmark" />
+                      </button>
+                    </div>
+                    {r.notes && <p className="job-card-round-notes">{r.notes}</p>}
+                  </div>
+                ))}
+                {showRoundForm && (
+                  <div className="job-card-round-form">
+                    <input
+                      className="job-card-round-input"
+                      placeholder="Interviewer name (optional)"
+                      value={roundInterviewer}
+                      onChange={(e) => setRoundInterviewer(e.target.value)}
+                    />
+                    <textarea
+                      className="job-card-round-textarea"
+                      placeholder="Notes — what was discussed, salary range, next steps…"
+                      value={roundNotes}
+                      onChange={(e) => setRoundNotes(e.target.value)}
+                      rows={3}
+                    />
+                    <div className="job-card-round-form-actions">
+                      <button
+                        className="job-card-round-save"
+                        onClick={() => {
+                          if (!roundNotes.trim()) return;
+                          const entry: RoundEntry = {
+                            id: `${Date.now()}`,
+                            round: rounds.length + 1,
+                            interviewer: roundInterviewer.trim(),
+                            notes: roundNotes.trim(),
+                            date: new Date().toISOString(),
+                          };
+                          onRoundsChange?.([...rounds, entry]);
+                          setRoundNotes("");
+                          setRoundInterviewer("");
+                          setShowRoundForm(false);
+                        }}
+                      >
+                        Save Round
+                      </button>
+                      <button
+                        className="job-card-round-cancel"
+                        onClick={() => { setShowRoundForm(false); setRoundNotes(""); setRoundInterviewer(""); }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Feature 4: Pre-employment Checklist */}
+            {job.status === "Offer" && (
+              <div className="job-card-checklist" onClick={(e) => e.stopPropagation()}>
+                <div className="job-card-checklist-header">
+                  <span className="job-card-checklist-title">
+                    <i className="fas fa-clipboard-list" />
+                    Pre-employment Checklist
+                  </span>
+                  <span className="job-card-checklist-progress">
+                    {DEFAULT_OFFER_CHECKLIST.filter((item) => offerChecklist[item.id]).length}
+                    /{DEFAULT_OFFER_CHECKLIST.length}
+                  </span>
+                </div>
+                {DEFAULT_OFFER_CHECKLIST.map((item) => (
+                  <label key={item.id} className="job-card-checklist-item">
+                    <input
+                      type="checkbox"
+                      checked={offerChecklist[item.id] ?? false}
+                      onChange={(e) =>
+                        onOfferChecklistChange?.({ ...offerChecklist, [item.id]: e.target.checked })
+                      }
+                    />
+                    <span className={offerChecklist[item.id] ? "job-card-checklist-label--done" : ""}>
+                      {item.label}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+
             {onMoveCard && (prevStatus || nextStatus) && (
               <div className="job-card-move-row">
                 {prevStatus ? (
@@ -315,10 +457,6 @@ export default function JobCard({ job, tags, priority, rejectionReason, isDraggi
                   Delete
                 </button>
               </div>
-              <span className="job-card-drawer-date">
-                <i className="fas fa-calendar-days" />
-                {formatDate(job.created_at)}
-              </span>
             </div>
           </div>
         </div>

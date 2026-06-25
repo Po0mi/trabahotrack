@@ -13,7 +13,21 @@ export const STORAGE_KEYS = {
   JOB_PRIORITIES: "trabahotrack_job_priorities",
   REJECTION_REASONS: "trabahotrack_rejection_reasons",
   INTERVIEW_DATES: "trabahotrack_interview_dates",
+  COMPANY_RESPONSE_TIMES: "trabahotrack_company_response_times",
+  ROUND_HISTORY: "trabahotrack_round_history",
+  BURNOUT: "trabahotrack_burnout",
+  OFFER_CHECKLISTS: "trabahotrack_offer_checklists",
 };
+
+export const DEFAULT_OFFER_CHECKLIST = [
+  { id: "nbi",        label: "NBI Clearance" },
+  { id: "tor",        label: "Transcript of Records (TOR)" },
+  { id: "bir2316",    label: "BIR Form 2316 (from previous employer)" },
+  { id: "medcert",    label: "Medical Certificate" },
+  { id: "sss",        label: "SSS ID / E4 Form" },
+  { id: "philhealth", label: "PhilHealth ID / MDR" },
+  { id: "pagibig",    label: "Pag-IBIG MID Number" },
+] as const;
 
 export const JOB_TAGS = [
   { id: "urgent",    label: "Urgent",    color: "#ef4444" },

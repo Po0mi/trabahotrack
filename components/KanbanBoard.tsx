@@ -13,11 +13,13 @@ import { useParams, usePathname, useRouter } from "next/navigation";
 import { STORAGE_KEYS, JOB_TAGS } from "@/utils/constants";
 import { jobsApi } from "@/lib/jobs";
 import { toast } from "@/lib/toast";
-import type { Job, JobStatus } from "@/types/job";
+import type { Job, JobStatus, RoundEntry } from "@/types/job";
 import Column from "./Column";
 import AddJobModal from "./AddJobModal";
 import EditJobModal from "./EditJobModal";
 import ResetBoardModal from "./ResetBoardModal";
+import BurnoutCheckin from "./BurnoutCheckin";
+import StatusTipPopup from "./StatusTipPopup";
 import { JOB_STATUSES } from "@/utils/constants";
 import "@/styles/components/kanbanBoard.scss";
 
@@ -55,6 +57,7 @@ export default function KanbanBoard({
   const pendingXRef = useRef(0);
   const pendingYRef = useRef(0);
   const lastOverRef = useRef<string | null>(null);
+  const dragOffsetRef = useRef({ x: 20, y: 20 });
   const [searchQuery, setSearchQuery] = useState("");
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
   const [jobTags, setJobTags] = useState<Record<string, string[]>>(() => {
@@ -97,9 +100,44 @@ export default function KanbanBoard({
     },
   );
 
-  const [successPulseStatus, setSuccessPulseStatus] = useState<string | null>(
-    null,
+  // Feature 1: company name (normalized) → { totalDays, count }
+  const [companyResponseTimes, setCompanyResponseTimes] = useState<
+    Record<string, { totalDays: number; count: number }>
+  >(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.COMPANY_RESPONSE_TIMES);
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  // Feature 2: jobId → RoundEntry[]
+  const [roundHistory, setRoundHistory] = useState<Record<string, RoundEntry[]>>(
+    () => {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEYS.ROUND_HISTORY);
+        return stored ? JSON.parse(stored) : {};
+      } catch {
+        return {};
+      }
+    },
   );
+
+  // Feature 4: jobId → { checklistItemId → checked }
+  const [offerChecklists, setOfferChecklists] = useState<
+    Record<string, Record<string, boolean>>
+  >(() => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEYS.OFFER_CHECKLISTS);
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const [successPulseStatus, setSuccessPulseStatus] = useState<string | null>(null);
+  const [statusTip, setStatusTip] = useState<string | null>(null);
 
   const searchRef = useRef<HTMLInputElement>(null);
   const importRef = useRef<HTMLInputElement>(null);
@@ -175,10 +213,33 @@ export default function KanbanBoard({
     [],
   );
 
+  const handleRoundHistoryChange = useCallback(
+    (jobId: string, rounds: RoundEntry[]) => {
+      setRoundHistory((prev) => {
+        const updated = { ...prev, [jobId]: rounds };
+        localStorage.setItem(STORAGE_KEYS.ROUND_HISTORY, JSON.stringify(updated));
+        return updated;
+      });
+    },
+    [],
+  );
+
+  const handleOfferChecklistChange = useCallback(
+    (jobId: string, checklist: Record<string, boolean>) => {
+      setOfferChecklists((prev) => {
+        const updated = { ...prev, [jobId]: checklist };
+        localStorage.setItem(STORAGE_KEYS.OFFER_CHECKLISTS, JSON.stringify(updated));
+        return updated;
+      });
+    },
+    [],
+  );
+
   const moveGhost = useCallback((x: number, y: number) => {
     if (ghostRef.current) {
-      ghostRef.current.style.left = `${x + 14}px`;
-      ghostRef.current.style.top = `${y - 14}px`;
+      const tx = x - dragOffsetRef.current.x;
+      const ty = y - dragOffsetRef.current.y;
+      ghostRef.current.style.transform = `translate(${tx}px, ${ty}px)`;
     }
     // Throttle overStatus updates to once per animation frame
     pendingXRef.current = x;
@@ -214,7 +275,8 @@ export default function KanbanBoard({
   }, []);
 
   const handleJobTouchStart = useCallback(
-    (jobId: string, startX: number, startY: number) => {
+    (jobId: string, startX: number, startY: number, grabX: number, grabY: number) => {
+      dragOffsetRef.current = { x: grabX, y: grabY };
       setDraggingJobId(jobId);
       moveGhost(startX, startY);
       showGhost();
@@ -263,7 +325,8 @@ export default function KanbanBoard({
   );
 
   const handleJobDragStart = useCallback(
-    (jobId: string, clientX: number, clientY: number) => {
+    (jobId: string, clientX: number, clientY: number, grabX: number, grabY: number) => {
+      dragOffsetRef.current = { x: grabX, y: grabY };
       let started = false;
 
       const onMove = (e: MouseEvent) => {
@@ -332,6 +395,40 @@ export default function KanbanBoard({
   const topRejectionStage = Object.entries(rejectionStageCounts).sort(
     (a, b) => b[1] - a[1],
   )[0];
+
+  const REJECTION_STAGE_SHORT: Record<string, string> = {
+    resume: "Resume Screening",
+    phone: "Phone Screen",
+    technical: "Technical Interview",
+    final: "Final Interview",
+    offer: "Offer Stage",
+    "no-response": "No Response",
+    other: "Other",
+  };
+  const topRejectionStageName = topRejectionStage
+    ? (REJECTION_STAGE_SHORT[topRejectionStage[0]] ?? topRejectionStage[0])
+    : null;
+
+  // Interview trend: compare jobs that reached Interview/Offer this week vs last week
+  const interviewsThisWeek = jobs.filter(
+    (j) =>
+      (j.status === "Interview" || j.status === "Offer") &&
+      Date.now() - new Date(j.created_at).getTime() < GHOST_WARN_MS,
+  ).length;
+  const interviewsLastWeek = jobs.filter((j) => {
+    const age = Date.now() - new Date(j.created_at).getTime();
+    return (
+      (j.status === "Interview" || j.status === "Offer") &&
+      age >= GHOST_WARN_MS &&
+      age < 2 * GHOST_WARN_MS
+    );
+  }).length;
+  const interviewsTrendingUp =
+    interviewsThisWeek >= 1 && interviewsThisWeek > interviewsLastWeek;
+
+  const hasInsights =
+    total >= 3 &&
+    (topRejectionStageName !== null || interviewsTrendingUp || ghostingCount >= 2);
 
   // Motivational tagline
   const motivationalTagline = (() => {
@@ -414,6 +511,27 @@ export default function KanbanBoard({
     if (newStatus === "Interview" || newStatus === "Offer") {
       setSuccessPulseStatus(newStatus);
       setTimeout(() => setSuccessPulseStatus(null), 1500);
+    }
+
+    if (newStatus === "Interview" || newStatus === "Offer" || newStatus === "Rejected") {
+      setStatusTip(newStatus);
+    }
+
+    // Feature 1: record response time when Applied → Interview
+    if (jobToUpdate.status === "Applied" && newStatus === "Interview") {
+      const daysDiff = Math.round(
+        (Date.now() - new Date(jobToUpdate.created_at).getTime()) / (1000 * 60 * 60 * 24),
+      );
+      const key = jobToUpdate.company.toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9]/g, "");
+      setCompanyResponseTimes((prev) => {
+        const existing = prev[key] ?? { totalDays: 0, count: 0 };
+        const updated = {
+          ...prev,
+          [key]: { totalDays: existing.totalDays + daysDiff, count: existing.count + 1 },
+        };
+        localStorage.setItem(STORAGE_KEYS.COMPANY_RESPONSE_TIMES, JSON.stringify(updated));
+        return updated;
+      });
     }
 
     try {
@@ -529,6 +647,23 @@ export default function KanbanBoard({
     return acc;
   }, {});
 
+  // Feature 1: per-job average response days (used in JobCard badge)
+  const jobAvgResponseDays: Record<string, number> = {};
+  for (const job of jobs) {
+    const key = job.company.toLowerCase().replace(/\s+/g, "").replace(/[^a-z0-9]/g, "");
+    const record = companyResponseTimes[key];
+    if (record && record.count > 0) {
+      jobAvgResponseDays[job.id] = Math.round(record.totalDays / record.count);
+    }
+  }
+
+  // Feature 3: applied this month count for burnout message
+  const now = new Date();
+  const appliedThisMonth = jobs.filter((j) => {
+    const d = new Date(j.created_at);
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }).length;
+
   return (
     <>
       {/* Header row */}
@@ -625,21 +760,6 @@ export default function KanbanBoard({
           <span className="stat-label">
             <i className="fas fa-circle-xmark stat-label-icon" />
             Rejections
-            {topRejectionStage && (
-              <span
-                className="stat-insight"
-                title={`Most common: ${topRejectionStage[0]}`}
-              >
-                · mostly{" "}
-                {topRejectionStage[0]
-                  .replace("resume", "resume screen")
-                  .replace("technical", "tech interview")
-                  .replace("final", "final round")
-                  .replace("no-response", "no response")
-                  .replace("offer", "offer stage")
-                  .replace("phone", "phone screen")}
-              </span>
-            )}
           </span>
         </div>
         <div className="stat-divider" />
@@ -655,6 +775,33 @@ export default function KanbanBoard({
           </span>
         </div>
       </div>
+
+      {/* Feature 3: Burnout check-in */}
+      <BurnoutCheckin totalAppliedThisMonth={appliedThisMonth} />
+
+      {/* Smart Insights */}
+      {hasInsights && (
+        <div className="insight-strip">
+          {topRejectionStageName && (
+            <div className="insight-chip insight-chip--warn">
+              <i className="fas fa-triangle-exclamation insight-chip-icon" />
+              Most rejections at: <strong>{topRejectionStageName}</strong>
+            </div>
+          )}
+          {interviewsTrendingUp && (
+            <div className="insight-chip insight-chip--positive">
+              <i className="fas fa-arrow-trend-up insight-chip-icon" />
+              You&apos;re getting more interviews this week ↑
+            </div>
+          )}
+          {ghostingCount >= 2 && (
+            <div className="insight-chip insight-chip--caution">
+              <i className="fas fa-ghost insight-chip-icon" />
+              Ghosting risk increasing
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Control bar: search + tag filters */}
       <div className="control-bar">
@@ -728,6 +875,9 @@ export default function KanbanBoard({
                 jobTags={jobTags}
                 jobPriorities={jobPriorities}
                 rejectionReasons={rejectionReasons}
+                jobAvgResponseDays={jobAvgResponseDays}
+                roundHistory={roundHistory}
+                offerChecklists={offerChecklists}
                 isActive={overStatus === status}
                 isPulsing={successPulseStatus === status}
                 onDeleteJob={onDeleteJob}
@@ -736,6 +886,8 @@ export default function KanbanBoard({
                 onJobDragStart={handleJobDragStart}
                 onJobTouchDragStart={handleJobTouchStart}
                 onMoveCard={handleDrop}
+                onRoundHistoryChange={handleRoundHistoryChange}
+                onOfferChecklistChange={handleOfferChecklistChange}
               />
             );
           })}
@@ -799,6 +951,12 @@ export default function KanbanBoard({
         />
       )}
 
+      <StatusTipPopup
+        status={statusTip}
+        onDismiss={() => setStatusTip(null)}
+        onOpenCalendar={() => setIsCalendarOpen(true)}
+      />
+
       {/* Drag ghost — always in DOM, shown/hidden and positioned via ref (no React re-renders during drag) */}
       {(() => {
         const job = draggingJobId
@@ -811,6 +969,8 @@ export default function KanbanBoard({
             style={{
               display: "none",
               position: "fixed",
+              left: 0,
+              top: 0,
               width: 240,
               background: "var(--surface)",
               border: "1px solid var(--border-hover)",
@@ -818,10 +978,10 @@ export default function KanbanBoard({
               borderRadius: "var(--radius-sm)",
               padding: "0.875rem",
               boxShadow:
-                "0 24px 50px rgba(0,0,0,0.22), 0 6px 14px rgba(79,70,229,0.14)",
-              transform: "rotate(2.5deg) scale(1.02)",
+                "0 8px 24px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.08)",
               pointerEvents: "none",
               zIndex: 9999,
+              willChange: "transform",
             }}
           >
             <div

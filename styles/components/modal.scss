@@ -1,18 +1,18 @@
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(16, 24, 40, 0.4);
-  backdrop-filter: blur(3px);
+  background: rgba(9, 9, 11, 0.5);
+  backdrop-filter: blur(4px);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
   padding: 1.5rem;
-  animation: overlayIn 0.15s ease-out;
+  animation: overlayIn 0.2s ease-out;
 
   @media (max-width: 640px) {
     backdrop-filter: none;
-    background: rgba(16, 24, 40, 0.55);
+    background: rgba(9, 9, 11, 0.6);
   }
 }
 
@@ -22,9 +22,9 @@
   border-radius: var(--radius-lg);
   width: 100%;
   max-width: 460px;
-  padding: 1.75rem;
+  padding: 1.5rem;
   box-shadow: var(--shadow-xl);
-  animation: modalIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: modalIn 0.3s cubic-bezier(0.34, 1.4, 0.64, 1);
   will-change: transform;
 }
 
@@ -32,39 +32,40 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.375rem;
+  margin-bottom: 1.25rem;
 
   h2 {
     font-family: var(--font-brand);
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     font-weight: 700;
     color: var(--text-primary);
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em;
   }
 }
 
 .modal-close {
   background: none;
-  border: none;
+  border: 1px solid transparent;
   color: var(--text-muted);
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-size: 1.1rem;
-  transition: all 0.15s ease;
+  font-size: 1rem;
+  transition: all 0.12s ease;
 
   &:hover {
     color: var(--text-primary);
     background: var(--bg);
+    border-color: var(--border);
   }
 }
 
 .modal-meta {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   color: var(--text-muted);
   margin-top: 0.15rem;
 }
@@ -72,7 +73,7 @@
 .modal-form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.875rem;
 }
 
 .form-row {
@@ -84,33 +85,32 @@
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
+  gap: 0.325rem;
 
   label {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 600;
     color: var(--text-secondary);
-    letter-spacing: 0.01em;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
   }
 
   input,
   textarea,
   select {
-    background: var(--surface);
+    background: var(--bg);
     border: 1px solid var(--border);
     border-radius: var(--radius-sm);
-    padding: 0.625rem 0.75rem;
+    padding: 0.575rem 0.7rem;
     color: var(--text-primary);
     font-size: 0.875rem;
     cursor: text;
-    transition:
-      border-color 0.15s ease,
-      box-shadow 0.15s ease;
+    transition: border-color 0.12s ease;
 
     &:focus {
       outline: none;
       border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+      background: var(--surface);
     }
 
     &::placeholder {
@@ -121,15 +121,15 @@
   textarea {
     resize: vertical;
     min-height: 80px;
-    line-height: 1.5;
+    line-height: 1.55;
   }
 
   select {
-    cursor: pointer; /* override the text cursor set above */
+    cursor: pointer;
     appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2398a2b3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
     background-repeat: no-repeat;
-    background-position: right 0.75rem center;
+    background-position: right 0.7rem center;
     padding-right: 2.25rem;
   }
 }
@@ -137,7 +137,7 @@
 .desc-paste-section {
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
+  gap: 0.325rem;
 }
 
 .desc-paste-toggle {
@@ -145,13 +145,13 @@
   border: none;
   padding: 0;
   color: var(--text-muted);
-  font-size: 0.8rem;
+  font-size: 0.775rem;
   font-weight: 500;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 0.35rem;
-  transition: color 0.15s ease;
+  gap: 0.3rem;
+  transition: color 0.12s ease;
 
   &:hover {
     color: var(--text-secondary);
@@ -159,18 +159,18 @@
 }
 
 .desc-paste-chevron {
-  font-size: 0.65rem;
+  font-size: 0.6rem;
 }
 
 .desc-paste-textarea {
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 0.625rem 0.75rem;
+  padding: 0.575rem 0.7rem;
   color: var(--text-primary);
   font-size: 0.875rem;
   resize: vertical;
-  line-height: 1.5;
+  line-height: 1.55;
   font-family: inherit;
   min-height: 80px;
   cursor: text;
@@ -178,7 +178,6 @@
   &:focus {
     outline: none;
     border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
   }
 
   &::placeholder {
@@ -188,14 +187,14 @@
 
 .form-error {
   color: var(--danger);
-  font-size: 0.8rem;
-  margin-top: -0.375rem;
+  font-size: 0.775rem;
+  margin-top: -0.25rem;
 }
 
 .form-hint {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   color: var(--offer-accent);
-  margin-top: 0.25rem;
+  margin-top: 0.2rem;
   font-weight: 500;
 
   &--loading {
@@ -207,22 +206,22 @@
 // Priority picker
 .priority-picker {
   display: flex;
-  gap: 0.375rem;
+  gap: 0.3rem;
 }
 
 .priority-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.325rem 0.625rem;
-  border-radius: 20px;
+  gap: 0.275rem;
+  padding: 0.3rem 0.575rem;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text-muted);
-  font-size: 0.775rem;
+  font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.12s ease;
   flex: 1;
   justify-content: center;
 
@@ -232,11 +231,7 @@
   }
 
   &--active {
-    background: color-mix(
-      in srgb,
-      var(--priority-color, var(--accent)) 12%,
-      transparent
-    );
+    background: color-mix(in srgb, var(--priority-color, var(--accent)) 10%, transparent);
     border-color: var(--priority-color, var(--accent));
     color: var(--priority-color, var(--text-primary));
     font-weight: 600;
@@ -256,8 +251,8 @@
 }
 
 .priority-dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: var(--priority-color, var(--text-muted));
   flex-shrink: 0;
@@ -265,38 +260,38 @@
 
 // Rejection reason field
 .rejection-reason-group {
-  background: color-mix(in srgb, var(--danger) 5%, transparent);
-  border: 1px solid color-mix(in srgb, var(--danger) 20%, transparent);
+  background: color-mix(in srgb, var(--danger) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 18%, transparent);
   border-radius: var(--radius-sm);
-  padding: 0.75rem;
+  padding: 0.625rem;
 }
 
 .form-hint--rejection {
   color: var(--text-muted);
   font-weight: 400;
-  font-size: 0.73rem;
+  font-size: 0.7rem;
 }
 
-// Tag picker in EditJobModal
+// Tag picker
 .tag-picker {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  gap: 0.375rem;
 }
 
 .tag-picker-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.375rem 0.75rem;
-  border-radius: 20px;
+  gap: 0.3rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text-secondary);
-  font-size: 0.8rem;
+  font-size: 0.775rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.12s ease;
 
   &:hover {
     border-color: var(--tag-color, var(--border-hover));
@@ -304,19 +299,15 @@
   }
 
   &--active {
-    background: color-mix(
-      in srgb,
-      var(--tag-color, var(--accent)) 15%,
-      transparent
-    );
+    background: color-mix(in srgb, var(--tag-color, var(--accent)) 12%, transparent);
     border-color: var(--tag-color, var(--accent));
     color: var(--text-primary);
   }
 }
 
 .tag-picker-dot {
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: var(--tag-color, var(--text-muted));
   flex-shrink: 0;
@@ -325,7 +316,7 @@
 .modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 0.625rem;
+  gap: 0.5rem;
   margin-top: 0.5rem;
 }
 
@@ -333,12 +324,12 @@
   background: transparent;
   border: 1px solid var(--border);
   color: var(--text-secondary);
-  padding: 0.575rem 1rem;
+  padding: 0.525rem 0.875rem;
   border-radius: var(--radius-sm);
   cursor: pointer;
   font-weight: 500;
-  font-size: 0.85rem;
-  transition: all 0.15s ease;
+  font-size: 0.825rem;
+  transition: all 0.12s ease;
 
   &:hover {
     background: var(--bg);
@@ -349,27 +340,31 @@
 
 .btn-primary {
   background: var(--accent);
-  border: none;
+  border: 1px solid var(--accent);
   color: #fff;
-  padding: 0.575rem 1.25rem;
+  padding: 0.525rem 1.125rem;
   border-radius: var(--radius-sm);
   cursor: pointer;
   font-weight: 600;
-  font-size: 0.85rem;
-  transition:
-    background 0.15s ease,
-    box-shadow 0.15s ease;
-  letter-spacing: -0.01em;
+  font-size: 0.825rem;
+  transition: background 0.12s ease, border-color 0.12s ease, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
+  letter-spacing: 0.01em;
 
   &:hover {
     background: var(--accent-hover);
-    box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+    border-color: var(--accent-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px color-mix(in srgb, var(--accent) 40%, transparent);
+  }
+
+  &:active {
+    transform: scale(0.96);
+    box-shadow: none;
   }
 
   &:disabled {
-    opacity: 0.65;
+    opacity: 0.6;
     cursor: not-allowed;
-    box-shadow: none;
   }
 }
 
@@ -379,23 +374,24 @@
 }
 
 .modal-delete-icon {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   background: var(--danger-light);
-  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, var(--danger) 20%, transparent);
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
   color: var(--danger);
-  font-size: 1.125rem;
+  font-size: 1rem;
 }
 
 .modal-delete-body {
   font-size: 0.875rem;
   color: var(--text-secondary);
   line-height: 1.65;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.375rem;
 
   strong {
     color: var(--text-primary);
@@ -405,70 +401,67 @@
 
 .btn-danger {
   background: var(--danger);
-  border: none;
+  border: 1px solid var(--danger);
   color: #fff;
-  padding: 0.575rem 1.25rem;
+  padding: 0.525rem 1.125rem;
   border-radius: var(--radius-sm);
   cursor: pointer;
   font-weight: 600;
-  font-size: 0.85rem;
-  transition:
-    background 0.15s ease,
-    box-shadow 0.15s ease;
-  letter-spacing: -0.01em;
+  font-size: 0.825rem;
+  transition: background 0.12s ease, border-color 0.12s ease;
+  letter-spacing: 0.01em;
 
   &:hover {
     background: var(--danger-hover);
-    box-shadow: 0 4px 10px rgba(239, 68, 68, 0.25);
+    border-color: var(--danger-hover);
   }
 
   &:disabled {
-    opacity: 0.65;
+    opacity: 0.6;
     cursor: not-allowed;
-    box-shadow: none;
   }
 }
 
 // Reset board modal variant
 .modal-reset-icon {
-  width: 44px;
-  height: 44px;
-  background: color-mix(in srgb, var(--danger) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--danger) 25%, transparent);
-  border-radius: 12px;
+  width: 40px;
+  height: 40px;
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 22%, transparent);
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1rem;
   color: var(--danger);
-  font-size: 1.25rem;
+  font-size: 1.125rem;
 }
 
 .modal-reset-warning {
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
-  font-size: 0.8rem;
+  font-size: 0.775rem;
   color: var(--text-secondary);
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 0.625rem 0.75rem;
-  margin-bottom: 1.5rem;
-  line-height: 1.5;
+  padding: 0.575rem 0.7rem;
+  margin-bottom: 1.375rem;
+  line-height: 1.55;
 }
 
 // Disclaimer modal variant
 .modal-disclaimer-icon {
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   background: #fef3c7;
-  border-radius: 10px;
+  border-radius: var(--radius-sm);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 1.25rem;
-  font-size: 1.125rem;
+  margin-bottom: 1rem;
+  font-size: 1rem;
   color: #d97706;
 }
 
@@ -476,7 +469,7 @@
   font-size: 0.875rem;
   color: var(--text-secondary);
   line-height: 1.65;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.375rem;
 }
 
 // Bookmarklet modal
@@ -487,7 +480,7 @@
 .bookmarklet-body {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.125rem;
   margin-bottom: 1rem;
 }
 
@@ -500,29 +493,28 @@
 .bookmarklet-drag-zone {
   display: flex;
   align-items: center;
-  gap: 0.875rem;
-  padding: 0.875rem;
+  gap: 0.75rem;
+  padding: 0.75rem;
   background: var(--bg);
-  border: 1.5px dashed var(--border-hover);
+  border: 1px dashed var(--border-hover);
   border-radius: var(--radius);
 }
 
-// PLAIN LINK STYLE - This is the key fix for bookmarklet dragging
 .bookmarklet-link {
   display: inline-block;
-  color: var(--accent, #646cff);
+  color: var(--accent);
   text-decoration: underline;
-  font-size: 0.95rem;
+  font-size: 0.925rem;
   font-weight: 600;
   cursor: grab;
-  padding: 0.25rem 0.5rem;
+  padding: 0.2rem 0.5rem;
   border: 1px dashed currentColor;
-  border-radius: 4px;
+  border-radius: 2px;
   background: transparent;
-  transition: all 0.15s ease;
+  transition: all 0.12s ease;
 
   &:hover {
-    background: color-mix(in srgb, var(--accent, #646cff) 8%, transparent);
+    background: color-mix(in srgb, var(--accent) 7%, transparent);
     text-decoration: none;
   }
 
@@ -532,7 +524,7 @@
 }
 
 .bookmarklet-drag-hint {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
   font-style: italic;
 }
@@ -544,26 +536,26 @@
 }
 
 .bookmarklet-sites-label {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 600;
   color: var(--text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
 }
 
 .bookmarklet-sites-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.375rem;
+  gap: 0.3rem;
 }
 
 .bookmarklet-site-chip {
-  font-size: 0.775rem;
+  font-size: 0.75rem;
   color: var(--text-secondary);
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 0.2rem 0.625rem;
+  border-radius: 2px;
+  padding: 0.18rem 0.55rem;
   font-weight: 500;
 }
 
@@ -590,15 +582,15 @@
   font-size: 0.85rem;
   color: var(--text-secondary);
   line-height: 1.6;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.125rem;
 }
 
 .modal-donation-qr-wrap {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.625rem;
-  padding: 1.125rem;
+  gap: 0.5rem;
+  padding: 1rem;
   background: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -612,24 +604,20 @@
 }
 
 .modal-donation-qr-hint {
-  font-size: 0.775rem;
+  font-size: 0.75rem;
   color: var(--text-muted);
   font-weight: 500;
 }
 
 @keyframes overlayIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to   { opacity: 1; }
 }
 
 @keyframes modalIn {
   from {
     opacity: 0;
-    transform: translateY(12px) scale(0.98);
+    transform: translateY(16px) scale(0.96);
   }
   to {
     opacity: 1;
@@ -645,9 +633,8 @@
   }
 
   .modal-content {
-    padding: 1.25rem;
-    border-radius: var(--radius-lg) var(--radius-lg) var(--radius-sm)
-      var(--radius-sm);
+    padding: 1.125rem;
+    border-radius: var(--radius-lg) var(--radius-lg) var(--radius-sm) var(--radius-sm);
     max-width: 100%;
     width: 100%;
     max-height: calc(100dvh - 1.5rem);
@@ -677,6 +664,6 @@
   .bookmarklet-drag-zone {
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.625rem;
+    gap: 0.5rem;
   }
 }

@@ -1,137 +1,135 @@
 :root {
   color-scheme: light;
   /* Surface */
-  --bg: #f7f8fa;
+  --bg: #f4f4f5;
   --surface: #ffffff;
   --surface-hover: #fafafa;
-  --border: #e4e7ec;
-  --border-hover: #d0d5dd;
+  --border: #d4d4d8;
+  --border-hover: #a1a1aa;
 
   /* Text */
-  --text-primary: #101828;
-  --text-secondary: #475467;
-  --text-muted: #98a2b3;
+  --text-primary: #09090b;
+  --text-secondary: #52525b;
+  --text-muted: #a1a1aa;
 
-  /* Accent */
-  --accent: #4f46e5;
-  --accent-hover: #4338ca;
-  --accent-light: #eef2ff;
+  /* Accent — decisive blue, not purple */
+  --accent: #1d4ed8;
+  --accent-hover: #1e40af;
+  --accent-light: #eff6ff;
 
   /* Danger */
-  --danger: #ef4444;
+  --danger: #dc2626;
   --danger-light: #fef2f2;
-  --danger-hover: #dc2626;
+  --danger-hover: #b91c1c;
 
   /* Status — Applied */
   --applied-bg: #eff6ff;
-  --applied-color: #1d4ed8;
+  --applied-color: #1e40af;
   --applied-border: #bfdbfe;
-  --applied-accent: #3b82f6;
+  --applied-accent: #2563eb;
 
   /* Status — Interview */
   --interview-bg: #fffbeb;
-  --interview-color: #92400e;
+  --interview-color: #78350f;
   --interview-border: #fde68a;
-  --interview-accent: #f59e0b;
+  --interview-accent: #d97706;
 
   /* Status — Offer */
-  --offer-bg: #ecfdf5;
-  --offer-color: #065f46;
-  --offer-border: #a7f3d0;
-  --offer-accent: #10b981;
+  --offer-bg: #f0fdf4;
+  --offer-color: #14532d;
+  --offer-border: #bbf7d0;
+  --offer-accent: #16a34a;
 
   /* Status — Rejected */
   --rejected-bg: #fef2f2;
-  --rejected-color: #991b1b;
+  --rejected-color: #7f1d1d;
   --rejected-border: #fca5a5;
-  --rejected-accent: #ef4444;
+  --rejected-accent: #dc2626;
 
   /* Status — Ghosted */
-  --ghosted-bg: #f8fafc;
-  --ghosted-color: #475569;
-  --ghosted-border: #cbd5e1;
-  --ghosted-accent: #94a3b8;
+  --ghosted-bg: #fafafa;
+  --ghosted-color: #3f3f46;
+  --ghosted-border: #d4d4d8;
+  --ghosted-accent: #71717a;
 
   /* Typography */
   --font-sans: var(--font-inter), 'Inter', system-ui, sans-serif;
-  --font-brand: var(--font-space-grotesk), 'Space Grotesk', system-ui, sans-serif;
+  --font-brand: var(--font-inter), 'Inter', system-ui, sans-serif;
 
-  /* Shadows */
-  --shadow-xs: 0 1px 2px rgba(16, 24, 40, 0.05);
-  --shadow-sm: 0 1px 3px rgba(16, 24, 40, 0.08), 0 1px 2px rgba(16, 24, 40, 0.04);
-  --shadow-md: 0 4px 6px -1px rgba(16, 24, 40, 0.08), 0 2px 4px -1px rgba(16, 24, 40, 0.04);
-  --shadow-lg: 0 10px 15px -3px rgba(16, 24, 40, 0.08), 0 4px 6px -2px rgba(16, 24, 40, 0.04);
-  --shadow-xl: 0 20px 25px -5px rgba(16, 24, 40, 0.1), 0 10px 10px -5px rgba(16, 24, 40, 0.04);
+  /* Shadows — minimal; borders carry the structure */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.07);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.07);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-xl: 0 8px 32px rgba(0, 0, 0, 0.10);
 
-  /* Radius */
-  --radius-sm: 6px;
-  --radius: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
-
+  /* Radius — sharp */
+  --radius-sm: 3px;
+  --radius: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 10px;
 }
 
 [data-theme="dark"] {
   color-scheme: dark;
   /* Surface */
-  --bg: #0d0f18;
-  --surface: #141721;
-  --surface-hover: #1a1d2e;
-  --border: #252836;
-  --border-hover: #303448;
+  --bg: #09090b;
+  --surface: #111111;
+  --surface-hover: #1c1c1e;
+  --border: #27272a;
+  --border-hover: #3f3f46;
 
   /* Text */
-  --text-primary: #f0f2fa;
-  --text-secondary: #8b92a9;
-  --text-muted: #4a5068;
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-muted: #52525b;
 
   /* Accent */
-  --accent: #6366f1;
-  --accent-hover: #818cf8;
-  --accent-light: #1e2040;
+  --accent: #3b82f6;
+  --accent-hover: #60a5fa;
+  --accent-light: #0c1d40;
 
   /* Danger */
   --danger: #f87171;
-  --danger-light: #2a1414;
+  --danger-light: #1a0808;
   --danger-hover: #fca5a5;
 
   /* Status — Applied */
-  --applied-bg: #0e1a35;
+  --applied-bg: #0a1325;
   --applied-color: #93c5fd;
   --applied-border: #1e3a6e;
-  --applied-accent: #3b82f6;
+  --applied-accent: #60a5fa;
 
   /* Status — Interview */
-  --interview-bg: #1c1808;
+  --interview-bg: #1c1400;
   --interview-color: #fcd34d;
-  --interview-border: #3d2e04;
+  --interview-border: #3d2a00;
   --interview-accent: #f59e0b;
 
   /* Status — Offer */
-  --offer-bg: #071a10;
+  --offer-bg: #061409;
   --offer-color: #6ee7b7;
-  --offer-border: #0d3d22;
-  --offer-accent: #10b981;
+  --offer-border: #0d3318;
+  --offer-accent: #22c55e;
 
   /* Status — Rejected */
-  --rejected-bg: #1f0a0a;
+  --rejected-bg: #160606;
   --rejected-color: #fca5a5;
-  --rejected-border: #4d1313;
-  --rejected-accent: #ef4444;
+  --rejected-border: #3d0a0a;
+  --rejected-accent: #f87171;
 
   /* Status — Ghosted */
-  --ghosted-bg: #111827;
-  --ghosted-color: #94a3b8;
-  --ghosted-border: #1f2937;
-  --ghosted-accent: #64748b;
+  --ghosted-bg: #111111;
+  --ghosted-color: #a1a1aa;
+  --ghosted-border: #27272a;
+  --ghosted-accent: #71717a;
 
   /* Shadows */
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
-
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.45);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 8px 32px rgba(0, 0, 0, 0.55);
 }
 
 html,
@@ -141,4 +139,13 @@ body {
   font-family: var(--font-sans);
   font-size: 15px;
   line-height: 1.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

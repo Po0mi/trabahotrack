@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Job } from "@/types/job";
+import type { Job, RoundEntry } from "@/types/job";
 import JobCard from "./JobCard";
 import "@/styles/components/kanbanBoard.scss";
 
@@ -33,14 +33,19 @@ interface ColumnProps {
   jobTags: Record<string, string[]>;
   jobPriorities: Record<string, string>;
   rejectionReasons: Record<string, string>;
+  jobAvgResponseDays: Record<string, number>;
+  roundHistory: Record<string, RoundEntry[]>;
+  offerChecklists: Record<string, Record<string, boolean>>;
   isActive: boolean;
   isPulsing?: boolean;
   onDeleteJob: (jobId: string) => void;
   onEditJob: (job: Job) => void;
   draggingJobId: string | null;
-  onJobDragStart: (jobId: string, x: number, y: number) => void;
-  onJobTouchDragStart: (jobId: string, x: number, y: number) => void;
+  onJobDragStart: (jobId: string, x: number, y: number, grabX: number, grabY: number) => void;
+  onJobTouchDragStart: (jobId: string, x: number, y: number, grabX: number, grabY: number) => void;
   onMoveCard: (jobId: string, newStatus: string) => void;
+  onRoundHistoryChange: (jobId: string, rounds: RoundEntry[]) => void;
+  onOfferChecklistChange: (jobId: string, checklist: Record<string, boolean>) => void;
 }
 
 export default function Column({
@@ -49,6 +54,9 @@ export default function Column({
   jobTags,
   jobPriorities,
   rejectionReasons,
+  jobAvgResponseDays,
+  roundHistory,
+  offerChecklists,
   isActive,
   isPulsing,
   onDeleteJob,
@@ -57,6 +65,8 @@ export default function Column({
   onJobDragStart,
   onJobTouchDragStart,
   onMoveCard,
+  onRoundHistoryChange,
+  onOfferChecklistChange,
 }: ColumnProps) {
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const statusClass = title.toLowerCase();
@@ -113,12 +123,17 @@ export default function Column({
                 tags={jobTags[job.id] ?? []}
                 priority={jobPriorities[job.id]}
                 rejectionReason={rejectionReasons[job.id]}
+                avgResponseDays={jobAvgResponseDays[job.id]}
+                rounds={roundHistory[job.id] ?? []}
+                offerChecklist={offerChecklists[job.id] ?? {}}
                 isDragging={job.id === draggingJobId}
                 onDeleteJob={onDeleteJob}
                 onEditJob={onEditJob}
                 onDragStart={onJobDragStart}
                 onTouchDragStart={onJobTouchDragStart}
                 onMoveCard={onMoveCard}
+                onRoundsChange={(rounds) => onRoundHistoryChange(job.id, rounds)}
+                onOfferChecklistChange={(cl) => onOfferChecklistChange(job.id, cl)}
               />
             ))}
             {showGhost && <div className="kanban-column-ghost" />}

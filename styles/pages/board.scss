@@ -3,13 +3,11 @@
   display: flex;
   flex-direction: column;
   background-color: var(--bg);
-  background-image: radial-gradient(circle, var(--border) 1.5px, transparent 1.5px);
-  background-size: 24px 24px;
 }
 
 .board-main {
   flex: 1;
-  padding: 2rem;
+  padding: 1.75rem 2rem;
   overflow-x: auto;
 }
 
@@ -21,13 +19,13 @@
   height: 50vh;
   gap: 0.75rem;
   color: var(--text-muted);
-  font-size: 0.9rem;
+  font-size: 0.875rem;
 }
 
 .board-loading-spinner {
-  width: 28px;
-  height: 28px;
-  border: 2px solid var(--border);
+  width: 24px;
+  height: 24px;
+  border: 1.5px solid var(--border);
   border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
@@ -42,10 +40,10 @@
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  padding: 0.875rem 2rem;
+  padding: 0.75rem 2rem;
   border-top: 1px solid var(--border);
   background: var(--surface);
-  font-size: 0.8rem;
+  font-size: 0.775rem;
   color: var(--text-muted);
 }
 
@@ -61,14 +59,14 @@
 }
 
 .board-footer-heart {
-  color: #ef4444;
+  color: var(--danger);
 }
 
 .board-footer-link {
   color: var(--text-secondary);
   font-weight: 600;
   text-decoration: none;
-  transition: color 0.15s ease;
+  transition: color 0.12s ease;
 
   &:hover {
     color: var(--accent);
@@ -83,21 +81,21 @@
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  padding: 0.3rem 0.75rem;
+  padding: 0.275rem 0.7rem;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
   background: transparent;
   color: var(--text-muted);
-  font-size: 0.775rem;
+  font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.12s ease;
   font-family: var(--font-sans);
 
   &:hover {
     border-color: #0070f3;
     color: #0070f3;
-    background: rgba(0, 112, 243, 0.06);
+    background: rgba(0, 112, 243, 0.05);
   }
 }
 
@@ -109,7 +107,7 @@
 
   .board-footer {
     flex-wrap: wrap;
-    padding: 0.75rem 1rem;
+    padding: 0.625rem 1rem;
     gap: 0.5rem;
   }
 }
