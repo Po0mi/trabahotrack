@@ -40,6 +40,7 @@ interface ColumnProps {
   draggingJobId: string | null;
   onJobDragStart: (jobId: string, x: number, y: number) => void;
   onJobTouchDragStart: (jobId: string, x: number, y: number) => void;
+  onMoveCard: (jobId: string, newStatus: string) => void;
 }
 
 export default function Column({
@@ -55,6 +56,7 @@ export default function Column({
   draggingJobId,
   onJobDragStart,
   onJobTouchDragStart,
+  onMoveCard,
 }: ColumnProps) {
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
   const statusClass = title.toLowerCase();
@@ -116,6 +118,7 @@ export default function Column({
                 onEditJob={onEditJob}
                 onDragStart={onJobDragStart}
                 onTouchDragStart={onJobTouchDragStart}
+                onMoveCard={onMoveCard}
               />
             ))}
             {showGhost && <div className="kanban-column-ghost" />}

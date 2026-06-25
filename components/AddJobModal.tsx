@@ -7,8 +7,6 @@ import type { Job, JobStatus } from "@/types/job";
 import { JOB_STATUSES, JOB_TAGS, JOB_PRIORITIES } from "@/utils/constants";
 import "@/styles/components/modal.scss";
 
-
-
 interface AddJobModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -47,7 +45,7 @@ export default function AddJobModal({
   const [urlHint, setUrlHint] = useState<string | null>(null);
   const handleTagToggle = (tagId: string) => {
     setSelectedTags((prev) =>
-      prev.includes(tagId) ? prev.filter((t) => t !== tagId) : [...prev, tagId]
+      prev.includes(tagId) ? prev.filter((t) => t !== tagId) : [...prev, tagId],
     );
   };
 
@@ -125,7 +123,11 @@ export default function AddJobModal({
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h2>Add Application</h2>
-          <button className="modal-close" onClick={handleClose} aria-label="Close">
+          <button
+            className="modal-close"
+            onClick={handleClose}
+            aria-label="Close"
+          >
             ×
           </button>
         </div>
@@ -139,7 +141,7 @@ export default function AddJobModal({
               value={jobUrl}
               onChange={(e) => setJobUrl(e.target.value)}
               onPaste={handleJobUrlPaste}
-              placeholder="Paste a LinkedIn or Indeed URL to auto-fill"
+              placeholder="Paste a LinkedIn, Indeed, or any job posting URL"
             />
             {urlHint && <p className="form-hint">✨ {urlHint}</p>}
           </div>
@@ -178,7 +180,9 @@ export default function AddJobModal({
                 onChange={(e) => setStatus(e.target.value as JobStatus)}
               >
                 {JOB_STATUSES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
                 ))}
               </select>
             </div>
@@ -191,8 +195,12 @@ export default function AddJobModal({
                     key={p.id}
                     type="button"
                     className={`priority-btn priority-btn--${p.id}${selectedPriority === p.id ? " priority-btn--active" : ""}`}
-                    style={{ "--priority-color": p.color } as React.CSSProperties}
-                    onClick={() => setSelectedPriority((prev) => prev === p.id ? "" : p.id)}
+                    style={
+                      { "--priority-color": p.color } as React.CSSProperties
+                    }
+                    onClick={() =>
+                      setSelectedPriority((prev) => (prev === p.id ? "" : p.id))
+                    }
                     title={`${p.label} priority`}
                   >
                     <span className="priority-dot" />
@@ -246,7 +254,11 @@ export default function AddJobModal({
           {error && <p className="form-error">{error}</p>}
 
           <div className="modal-actions">
-            <button type="button" className="btn-secondary" onClick={handleClose}>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={handleClose}
+            >
               Cancel
             </button>
             <button type="submit" className="btn-primary" disabled={isLoading}>

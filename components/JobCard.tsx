@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import type { Job } from "@/types/job";
-import { JOB_TAGS, JOB_PRIORITIES, REJECTION_STAGES } from "@/utils/constants";
+import { JOB_TAGS, JOB_PRIORITIES, REJECTION_STAGES, JOB_STATUSES } from "@/utils/constants";
 import "@/styles/components/jobcard.scss";
 
 interface JobCardProps {
@@ -15,6 +15,7 @@ interface JobCardProps {
   onEditJob: (job: Job) => void;
   onDragStart?: (jobId: string, x: number, y: number) => void;
   onTouchDragStart?: (jobId: string, x: number, y: number) => void;
+  onMoveCard?: (jobId: string, newStatus: string) => void;
 }
 
 const STALE_MS = 14 * 24 * 60 * 60 * 1000;
@@ -66,7 +67,7 @@ function getLogoSrc(job: Job): string {
   return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
 }
 
-export default function JobCard({ job, tags, priority, rejectionReason, isDragging, onDeleteJob, onEditJob, onDragStart, onTouchDragStart }: JobCardProps) {
+export default function JobCard({ job, tags, priority, rejectionReason, isDragging, onDeleteJob, onEditJob, onDragStart, onTouchDragStart, onMoveCard }: JobCardProps) {
   const [logoVisible, setLogoVisible] = useState(true);
   const [expanded, setExpanded] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -76,6 +77,10 @@ export default function JobCard({ job, tags, priority, rejectionReason, isDraggi
 
   const priorityMeta = priority ? JOB_PRIORITIES.find((p) => p.id === priority) : null;
   const rejectionStageMeta = rejectionReason ? REJECTION_STAGES.find((s) => s.id === rejectionReason) : null;
+
+  const statusIndex = JOB_STATUSES.indexOf(job.status as typeof JOB_STATUSES[number]);
+  const prevStatus = statusIndex > 0 ? JOB_STATUSES[statusIndex - 1] : null;
+  const nextStatus = statusIndex < JOB_STATUSES.length - 1 ? JOB_STATUSES[statusIndex + 1] : null;
 
   // Escape collapses the card (capture phase to run before KanbanBoard's handler)
   useEffect(() => {
@@ -270,6 +275,28 @@ export default function JobCard({ job, tags, priority, rejectionReason, isDraggi
         <div className="job-card-drawer-inner">
           <div className="job-card-drawer-content">
             <div className="job-card-drawer-sep" />
+            {onMoveCard && (prevStatus || nextStatus) && (
+              <div className="job-card-move-row">
+                {prevStatus ? (
+                  <button
+                    className="job-card-move-btn"
+                    onClick={(e) => { e.stopPropagation(); onMoveCard(job.id, prevStatus); }}
+                  >
+                    <i className="fas fa-chevron-left" />
+                    {prevStatus}
+                  </button>
+                ) : <span />}
+                {nextStatus ? (
+                  <button
+                    className="job-card-move-btn job-card-move-btn--next"
+                    onClick={(e) => { e.stopPropagation(); onMoveCard(job.id, nextStatus); }}
+                  >
+                    {nextStatus}
+                    <i className="fas fa-chevron-right" />
+                  </button>
+                ) : <span />}
+              </div>
+            )}
             <div className="job-card-drawer-row">
               <div className="job-card-drawer-actions">
                 <button

@@ -568,6 +568,7 @@ export default function KanbanBoard({
               draggingJobId={draggingJobId}
               onJobDragStart={handleJobDragStart}
               onJobTouchDragStart={handleJobTouchStart}
+              onMoveCard={handleDrop}
             />
           );
         })}
