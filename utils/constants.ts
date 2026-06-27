@@ -17,6 +17,7 @@ export const STORAGE_KEYS = {
   ROUND_HISTORY: "trabahotrack_round_history",
   BURNOUT: "trabahotrack_burnout",
   OFFER_CHECKLISTS: "trabahotrack_offer_checklists",
+  REJECTION_DATES: "trabahotrack_rejection_dates",
 };
 
 export const DEFAULT_OFFER_CHECKLIST = [

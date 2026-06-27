@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import type { Job, RoundEntry } from "@/types/job";
+import type { Job } from "@/types/job";
 import { JOB_TAGS, JOB_PRIORITIES, REJECTION_STAGES, JOB_STATUSES, DEFAULT_OFFER_CHECKLIST } from "@/utils/constants";
 import "@/styles/components/jobcard.scss";
 
@@ -11,15 +11,17 @@ interface JobCardProps {
   priority?: string;
   rejectionReason?: string;
   avgResponseDays?: number;
-  rounds: RoundEntry[];
   offerChecklist: Record<string, boolean>;
+  interviewDate?: string;
+  rejectionDate?: string;
+  onInterviewDateChange?: (date: string) => void;
+  onRejectionReasonChange?: (reason: string) => void;
   isDragging?: boolean;
   onDeleteJob: (jobId: string) => void;
   onEditJob: (job: Job) => void;
   onDragStart?: (jobId: string, x: number, y: number, grabX: number, grabY: number) => void;
   onTouchDragStart?: (jobId: string, x: number, y: number, grabX: number, grabY: number) => void;
   onMoveCard?: (jobId: string, newStatus: string) => void;
-  onRoundsChange?: (rounds: RoundEntry[]) => void;
   onOfferChecklistChange?: (checklist: Record<string, boolean>) => void;
 }
 
@@ -72,12 +74,9 @@ function getLogoSrc(job: Job): string {
   return `https://www.google.com/s2/favicons?domain=${domain}&sz=32`;
 }
 
-export default function JobCard({ job, tags, priority, rejectionReason, avgResponseDays, rounds, offerChecklist, isDragging, onDeleteJob, onEditJob, onDragStart, onTouchDragStart, onMoveCard, onRoundsChange, onOfferChecklistChange }: JobCardProps) {
+export default function JobCard({ job, tags, priority, rejectionReason, avgResponseDays, offerChecklist, interviewDate, rejectionDate, onInterviewDateChange, onRejectionReasonChange, isDragging, onDeleteJob, onEditJob, onDragStart, onTouchDragStart, onMoveCard, onOfferChecklistChange }: JobCardProps) {
   const [logoVisible, setLogoVisible] = useState(true);
   const [expanded, setExpanded] = useState(false);
-  const [showRoundForm, setShowRoundForm] = useState(false);
-  const [roundNotes, setRoundNotes] = useState("");
-  const [roundInterviewer, setRoundInterviewer] = useState("");
   const cardRef = useRef<HTMLDivElement>(null);
   const elapsed = Date.now() - new Date(job.created_at).getTime();
   const isStale = job.status === "Applied" && elapsed > STALE_MS;
@@ -243,10 +242,24 @@ export default function JobCard({ job, tags, priority, rejectionReason, avgRespo
         </div>
       )}
 
+      {job.status === "Interview" && interviewDate && (
+        <p className="job-card-interview-date-badge">
+          <i className="fas fa-calendar-check" />
+          {formatDate(interviewDate)}
+        </p>
+      )}
+
       {job.status === "Rejected" && rejectionStageMeta && (
         <p className="job-card-rejection">
           <i className="fas fa-xmark job-card-rejection-icon" />
           {rejectionStageMeta.label}
+        </p>
+      )}
+
+      {job.status === "Rejected" && rejectionDate && (
+        <p className="job-card-rejection-date">
+          <i className="fas fa-calendar-xmark" />
+          {formatDate(rejectionDate)}
         </p>
       )}
 
@@ -304,86 +317,50 @@ export default function JobCard({ job, tags, priority, rejectionReason, avgRespo
           <div className="job-card-drawer-content">
             <div className="job-card-drawer-sep" />
 
-            {/* Feature 2: Interview Round History */}
+            {/* Interview date picker */}
             {job.status === "Interview" && (
-              <div className="job-card-rounds" onClick={(e) => e.stopPropagation()}>
-                <div className="job-card-rounds-header">
-                  <span className="job-card-rounds-title">
-                    <i className="fas fa-layer-group" />
-                    Round History
+              <div className="job-card-interview-date-section" onClick={(e) => e.stopPropagation()}>
+                <div className="job-card-date-section-header">
+                  <span className="job-card-date-section-title">
+                    <i className="fas fa-calendar-check" />
+                    Interview Date
                   </span>
-                  <button
-                    className="job-card-rounds-add-btn"
-                    onClick={() => setShowRoundForm((v) => !v)}
-                  >
-                    <i className="fas fa-plus" />
-                    Add Round
-                  </button>
                 </div>
-                {rounds.length === 0 && !showRoundForm && (
-                  <p className="job-card-rounds-empty">No rounds logged yet.</p>
-                )}
-                {rounds.map((r) => (
-                  <div key={r.id} className="job-card-round-entry">
-                    <div className="job-card-round-entry-header">
-                      <span className="job-card-round-num">Round {r.round}</span>
-                      {r.interviewer && <span className="job-card-round-interviewer">{r.interviewer}</span>}
-                      <span className="job-card-round-date">{formatDate(r.date)}</span>
-                      <button
-                        className="job-card-round-delete"
-                        onClick={() => onRoundsChange?.(rounds.filter((x) => x.id !== r.id))}
-                        title="Remove"
-                      >
-                        <i className="fas fa-xmark" />
-                      </button>
-                    </div>
-                    {r.notes && <p className="job-card-round-notes">{r.notes}</p>}
-                  </div>
-                ))}
-                {showRoundForm && (
-                  <div className="job-card-round-form">
-                    <input
-                      className="job-card-round-input"
-                      placeholder="Interviewer name (optional)"
-                      value={roundInterviewer}
-                      onChange={(e) => setRoundInterviewer(e.target.value)}
-                    />
-                    <textarea
-                      className="job-card-round-textarea"
-                      placeholder="Notes — what was discussed, salary range, next steps…"
-                      value={roundNotes}
-                      onChange={(e) => setRoundNotes(e.target.value)}
-                      rows={3}
-                    />
-                    <div className="job-card-round-form-actions">
-                      <button
-                        className="job-card-round-save"
-                        onClick={() => {
-                          if (!roundNotes.trim()) return;
-                          const entry: RoundEntry = {
-                            id: `${Date.now()}`,
-                            round: rounds.length + 1,
-                            interviewer: roundInterviewer.trim(),
-                            notes: roundNotes.trim(),
-                            date: new Date().toISOString(),
-                          };
-                          onRoundsChange?.([...rounds, entry]);
-                          setRoundNotes("");
-                          setRoundInterviewer("");
-                          setShowRoundForm(false);
-                        }}
-                      >
-                        Save Round
-                      </button>
-                      <button
-                        className="job-card-round-cancel"
-                        onClick={() => { setShowRoundForm(false); setRoundNotes(""); setRoundInterviewer(""); }}
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                )}
+                <input
+                  type="date"
+                  className="job-card-date-input"
+                  value={interviewDate ?? ""}
+                  onChange={(e) => { e.stopPropagation(); onInterviewDateChange?.(e.target.value); }}
+                  onClick={(e) => e.stopPropagation()}
+                />
+              </div>
+            )}
+
+            {/* Rejection date */}
+            {job.status === "Rejected" && rejectionDate && (
+              <div className="job-card-rejection-date-section">
+                <i className="fas fa-calendar-xmark" />
+                Rejected on {formatDate(rejectionDate)}
+              </div>
+            )}
+
+            {/* Why Rejected dropdown */}
+            {job.status === "Rejected" && (
+              <div className="job-card-rejection-reason-section" onClick={(e) => e.stopPropagation()}>
+                <label className="job-card-rejection-reason-label">
+                  <i className="fas fa-circle-xmark" />
+                  Why Rejected?
+                </label>
+                <select
+                  className="job-card-rejection-reason-select"
+                  value={rejectionReason ?? ""}
+                  onChange={(e) => onRejectionReasonChange?.(e.target.value)}
+                >
+                  <option value="">— select stage —</option>
+                  {REJECTION_STAGES.map((s) => (
+                    <option key={s.id} value={s.id}>{s.label}</option>
+                  ))}
+                </select>
               </div>
             )}
 

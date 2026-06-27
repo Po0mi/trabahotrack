@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Job, RoundEntry } from "@/types/job";
+import type { Job } from "@/types/job";
 import JobCard from "./JobCard";
 import "@/styles/components/kanbanBoard.scss";
 
@@ -34,8 +34,11 @@ interface ColumnProps {
   jobPriorities: Record<string, string>;
   rejectionReasons: Record<string, string>;
   jobAvgResponseDays: Record<string, number>;
-  roundHistory: Record<string, RoundEntry[]>;
   offerChecklists: Record<string, Record<string, boolean>>;
+  interviewDates: Record<string, string>;
+  rejectionDates: Record<string, string>;
+  onInterviewDateChange: (jobId: string, date: string) => void;
+  onRejectionReasonChange: (jobId: string, reason: string) => void;
   isActive: boolean;
   isPulsing?: boolean;
   onDeleteJob: (jobId: string) => void;
@@ -44,7 +47,6 @@ interface ColumnProps {
   onJobDragStart: (jobId: string, x: number, y: number, grabX: number, grabY: number) => void;
   onJobTouchDragStart: (jobId: string, x: number, y: number, grabX: number, grabY: number) => void;
   onMoveCard: (jobId: string, newStatus: string) => void;
-  onRoundHistoryChange: (jobId: string, rounds: RoundEntry[]) => void;
   onOfferChecklistChange: (jobId: string, checklist: Record<string, boolean>) => void;
 }
 
@@ -55,8 +57,11 @@ export default function Column({
   jobPriorities,
   rejectionReasons,
   jobAvgResponseDays,
-  roundHistory,
   offerChecklists,
+  interviewDates,
+  rejectionDates,
+  onInterviewDateChange,
+  onRejectionReasonChange,
   isActive,
   isPulsing,
   onDeleteJob,
@@ -65,7 +70,6 @@ export default function Column({
   onJobDragStart,
   onJobTouchDragStart,
   onMoveCard,
-  onRoundHistoryChange,
   onOfferChecklistChange,
 }: ColumnProps) {
   const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
@@ -124,15 +128,17 @@ export default function Column({
                 priority={jobPriorities[job.id]}
                 rejectionReason={rejectionReasons[job.id]}
                 avgResponseDays={jobAvgResponseDays[job.id]}
-                rounds={roundHistory[job.id] ?? []}
                 offerChecklist={offerChecklists[job.id] ?? {}}
+                interviewDate={interviewDates[job.id]}
+                rejectionDate={rejectionDates[job.id]}
+                onInterviewDateChange={(date) => onInterviewDateChange(job.id, date)}
+                onRejectionReasonChange={(reason) => onRejectionReasonChange(job.id, reason)}
                 isDragging={job.id === draggingJobId}
                 onDeleteJob={onDeleteJob}
                 onEditJob={onEditJob}
                 onDragStart={onJobDragStart}
                 onTouchDragStart={onJobTouchDragStart}
                 onMoveCard={onMoveCard}
-                onRoundsChange={(rounds) => onRoundHistoryChange(job.id, rounds)}
                 onOfferChecklistChange={(cl) => onOfferChecklistChange(job.id, cl)}
               />
             ))}

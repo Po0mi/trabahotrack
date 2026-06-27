@@ -19,8 +19,6 @@ interface EditJobModalProps {
   onPriorityChange: (priority: string) => void;
   rejectionReason?: string;
   onRejectionReasonChange: (reason: string) => void;
-  interviewDate?: string;
-  onInterviewDateChange: (date: string) => void;
 }
 
 export default function EditJobModal({
@@ -35,8 +33,6 @@ export default function EditJobModal({
   onPriorityChange,
   rejectionReason = "",
   onRejectionReasonChange,
-  interviewDate = "",
-  onInterviewDateChange,
 }: EditJobModalProps) {
   const [company, setCompany] = useState(job.company);
   const [role, setRole] = useState(job.role);
@@ -44,7 +40,6 @@ export default function EditJobModal({
   const [jobUrl, setJobUrl] = useState(job.job_url ?? "");
   const [salary, setSalary] = useState(job.salary ?? "");
   const [notes, setNotes] = useState(job.notes ?? "");
-  const [localInterviewDate, setLocalInterviewDate] = useState(interviewDate);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [urlHint, setUrlHint] = useState<string | null>(null);
@@ -104,11 +99,6 @@ export default function EditJobModal({
   const handleRejectionReasonChange = (value: string) => {
     setLocalRejectionReason(value);
     onRejectionReasonChange(value);
-  };
-
-  const handleInterviewDateChange = (value: string) => {
-    setLocalInterviewDate(value);
-    onInterviewDateChange(value);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -245,27 +235,15 @@ export default function EditJobModal({
             {urlHint && <p className="form-hint">✨ {urlHint}</p>}
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="edit-salary">Salary</label>
-              <input
-                id="edit-salary"
-                type="text"
-                value={salary}
-                onChange={(e) => setSalary(e.target.value)}
-                placeholder="e.g. $80k–100k, ₱50,000/mo"
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="edit-interviewDate">Interview Date</label>
-              <input
-                id="edit-interviewDate"
-                type="date"
-                value={localInterviewDate}
-                onChange={(e) => handleInterviewDateChange(e.target.value)}
-              />
-            </div>
+          <div className="form-group">
+            <label htmlFor="edit-salary">Salary</label>
+            <input
+              id="edit-salary"
+              type="text"
+              value={salary}
+              onChange={(e) => setSalary(e.target.value)}
+              placeholder="e.g. $80k–100k, ₱50,000/mo"
+            />
           </div>
 
           <div className="form-group">

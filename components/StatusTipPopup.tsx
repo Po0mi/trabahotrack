@@ -18,8 +18,7 @@ const TIPS: Record<string, Tip> = {
     icon: "fa-calendar-days",
     iconColor: "#d97706",
     heading: "Interview scheduled!",
-    body: "Open the Calendar view to set the exact date — so you never miss the call.",
-    action: "Open Calendar",
+    body: "Expand the card to set the interview date and log your round notes.",
   },
   Offer: {
     icon: "fa-clipboard-list",

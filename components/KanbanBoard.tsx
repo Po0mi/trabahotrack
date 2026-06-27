@@ -13,12 +13,11 @@ import { useParams, usePathname, useRouter } from "next/navigation";
 import { STORAGE_KEYS, JOB_TAGS } from "@/utils/constants";
 import { jobsApi } from "@/lib/jobs";
 import { toast } from "@/lib/toast";
-import type { Job, JobStatus, RoundEntry } from "@/types/job";
+import type { Job, JobStatus } from "@/types/job";
 import Column from "./Column";
 import AddJobModal from "./AddJobModal";
 import EditJobModal from "./EditJobModal";
 import ResetBoardModal from "./ResetBoardModal";
-import BurnoutCheckin from "./BurnoutCheckin";
 import StatusTipPopup from "./StatusTipPopup";
 import { JOB_STATUSES } from "@/utils/constants";
 import "@/styles/components/kanbanBoard.scss";
@@ -100,6 +99,17 @@ export default function KanbanBoard({
     },
   );
 
+  const [rejectionDates, setRejectionDates] = useState<Record<string, string>>(
+    () => {
+      try {
+        const stored = localStorage.getItem(STORAGE_KEYS.REJECTION_DATES);
+        return stored ? JSON.parse(stored) : {};
+      } catch {
+        return {};
+      }
+    },
+  );
+
   // Feature 1: company name (normalized) → { totalDays, count }
   const [companyResponseTimes, setCompanyResponseTimes] = useState<
     Record<string, { totalDays: number; count: number }>
@@ -111,18 +121,6 @@ export default function KanbanBoard({
       return {};
     }
   });
-
-  // Feature 2: jobId → RoundEntry[]
-  const [roundHistory, setRoundHistory] = useState<Record<string, RoundEntry[]>>(
-    () => {
-      try {
-        const stored = localStorage.getItem(STORAGE_KEYS.ROUND_HISTORY);
-        return stored ? JSON.parse(stored) : {};
-      } catch {
-        return {};
-      }
-    },
-  );
 
   // Feature 4: jobId → { checklistItemId → checked }
   const [offerChecklists, setOfferChecklists] = useState<
@@ -213,11 +211,11 @@ export default function KanbanBoard({
     [],
   );
 
-  const handleRoundHistoryChange = useCallback(
-    (jobId: string, rounds: RoundEntry[]) => {
-      setRoundHistory((prev) => {
-        const updated = { ...prev, [jobId]: rounds };
-        localStorage.setItem(STORAGE_KEYS.ROUND_HISTORY, JSON.stringify(updated));
+  const handleRejectionDateChange = useCallback(
+    (jobId: string, date: string) => {
+      setRejectionDates((prev) => {
+        const updated = { ...prev, [jobId]: date };
+        localStorage.setItem(STORAGE_KEYS.REJECTION_DATES, JSON.stringify(updated));
         return updated;
       });
     },
@@ -517,6 +515,10 @@ export default function KanbanBoard({
       setStatusTip(newStatus);
     }
 
+    if (newStatus === "Rejected") {
+      handleRejectionDateChange(jobId, new Date().toISOString().slice(0, 10));
+    }
+
     // Feature 1: record response time when Applied → Interview
     if (jobToUpdate.status === "Applied" && newStatus === "Interview") {
       const daysDiff = Math.round(
@@ -657,13 +659,6 @@ export default function KanbanBoard({
     }
   }
 
-  // Feature 3: applied this month count for burnout message
-  const now = new Date();
-  const appliedThisMonth = jobs.filter((j) => {
-    const d = new Date(j.created_at);
-    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
-  }).length;
-
   return (
     <>
       {/* Header row */}
@@ -776,9 +771,6 @@ export default function KanbanBoard({
         </div>
       </div>
 
-      {/* Feature 3: Burnout check-in */}
-      <BurnoutCheckin totalAppliedThisMonth={appliedThisMonth} />
-
       {/* Smart Insights */}
       {hasInsights && (
         <div className="insight-strip">
@@ -876,7 +868,6 @@ export default function KanbanBoard({
                 jobPriorities={jobPriorities}
                 rejectionReasons={rejectionReasons}
                 jobAvgResponseDays={jobAvgResponseDays}
-                roundHistory={roundHistory}
                 offerChecklists={offerChecklists}
                 isActive={overStatus === status}
                 isPulsing={successPulseStatus === status}
@@ -886,7 +877,10 @@ export default function KanbanBoard({
                 onJobDragStart={handleJobDragStart}
                 onJobTouchDragStart={handleJobTouchStart}
                 onMoveCard={handleDrop}
-                onRoundHistoryChange={handleRoundHistoryChange}
+                interviewDates={interviewDates}
+                rejectionDates={rejectionDates}
+                onInterviewDateChange={handleInterviewDateChange}
+                onRejectionReasonChange={handleRejectionReasonChange}
                 onOfferChecklistChange={handleOfferChecklistChange}
               />
             );
@@ -943,10 +937,6 @@ export default function KanbanBoard({
           rejectionReason={rejectionReasons[editingJob.id] ?? ""}
           onRejectionReasonChange={(reason) =>
             handleRejectionReasonChange(editingJob.id, reason)
-          }
-          interviewDate={interviewDates[editingJob.id] ?? ""}
-          onInterviewDateChange={(date) =>
-            handleInterviewDateChange(editingJob.id, date)
           }
         />
       )}

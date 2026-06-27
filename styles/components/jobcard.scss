@@ -226,6 +226,41 @@
   }
 }
 
+// ─── Interview date badge (card body) ────────────────────────────────────────
+
+.job-card-interview-date-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #d97706;
+  line-height: 1.4;
+
+  i {
+    font-size: 0.62rem;
+    opacity: 0.85;
+  }
+}
+
+// ─── Rejection date (card body) ───────────────────────────────────────────────
+
+.job-card-rejection-date {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--danger);
+  opacity: 0.75;
+  line-height: 1.4;
+
+  i {
+    font-size: 0.6rem;
+    opacity: 0.7;
+  }
+}
+
 // ─── Rejection / salary / notes ───────────────────────────────────────────────
 
 .job-card-rejection {
@@ -618,22 +653,18 @@
   }
 }
 
-// ─── Feature 2: Round History ────────────────────────────────────────────────
+// ─── Rejection reason inline picker ──────────────────────────────────────────
 
-.job-card-rounds {
+.job-card-rejection-reason-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
   margin-bottom: 0.5rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px solid var(--border);
 }
 
-.job-card-rounds-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.4rem;
-}
-
-.job-card-rounds-title {
+.job-card-rejection-reason-label {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
@@ -643,107 +674,10 @@
   text-transform: uppercase;
   letter-spacing: 0.06em;
 
-  i { font-size: 0.6rem; color: var(--accent); }
+  i { font-size: 0.6rem; color: var(--danger); }
 }
 
-.job-card-rounds-add-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.2rem;
-  font-size: 0.65rem;
-  font-weight: 600;
-  color: var(--accent);
-  background: var(--accent-light);
-  border: 1px solid color-mix(in srgb, var(--accent) 20%, transparent);
-  border-radius: 2px;
-  padding: 2px 7px;
-  cursor: pointer;
-  font-family: var(--font-sans);
-  transition: background 0.12s ease, border-color 0.12s ease;
-
-  i { font-size: 0.55rem; }
-
-  &:hover {
-    background: color-mix(in srgb, var(--accent) 15%, transparent);
-    border-color: color-mix(in srgb, var(--accent) 35%, transparent);
-  }
-}
-
-.job-card-rounds-empty {
-  font-size: 0.68rem;
-  color: var(--text-muted);
-  font-style: italic;
-  margin: 0.2rem 0;
-}
-
-.job-card-round-entry {
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 0.4rem 0.55rem;
-  margin-bottom: 0.35rem;
-}
-
-.job-card-round-entry-header {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-  margin-bottom: 0.2rem;
-}
-
-.job-card-round-num {
-  font-size: 0.65rem;
-  font-weight: 800;
-  color: var(--accent);
-  letter-spacing: 0.02em;
-}
-
-.job-card-round-interviewer {
-  font-size: 0.65rem;
-  font-weight: 600;
-  color: var(--text-secondary);
-}
-
-.job-card-round-date {
-  font-size: 0.6rem;
-  color: var(--text-muted);
-  margin-left: auto;
-}
-
-.job-card-round-delete {
-  background: none;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 0 0.15rem;
-  font-size: 0.6rem;
-  line-height: 1;
-  transition: color 0.1s ease;
-
-  &:hover { color: var(--danger); }
-}
-
-.job-card-round-notes {
-  font-size: 0.68rem;
-  color: var(--text-muted);
-  line-height: 1.5;
-  margin: 0;
-}
-
-.job-card-round-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
-  margin-top: 0.4rem;
-  padding: 0.5rem;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-}
-
-.job-card-round-input,
-.job-card-round-textarea {
+.job-card-rejection-reason-select {
   width: 100%;
   font-family: var(--font-sans);
   font-size: 0.72rem;
@@ -751,53 +685,15 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  padding: 0.35rem 0.5rem;
-  resize: none;
-  box-sizing: border-box;
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
   transition: border-color 0.12s ease;
 
-  &::placeholder { color: var(--text-muted); }
   &:focus {
     outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 12%, transparent);
+    border-color: var(--danger);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger) 12%, transparent);
   }
-}
-
-.job-card-round-form-actions {
-  display: flex;
-  gap: 0.35rem;
-}
-
-.job-card-round-save {
-  flex: 1;
-  padding: 0.32rem 0.7rem;
-  border-radius: var(--radius-sm);
-  border: none;
-  background: var(--accent);
-  color: #fff;
-  font-size: 0.72rem;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: var(--font-sans);
-  transition: background 0.12s ease;
-
-  &:hover { background: var(--accent-hover); }
-}
-
-.job-card-round-cancel {
-  padding: 0.32rem 0.7rem;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: var(--bg);
-  color: var(--text-secondary);
-  font-size: 0.72rem;
-  font-weight: 600;
-  cursor: pointer;
-  font-family: var(--font-sans);
-  transition: background 0.12s ease, border-color 0.12s ease;
-
-  &:hover { background: var(--surface); border-color: var(--border-hover); }
 }
 
 // ─── Feature 4: Pre-employment Checklist ─────────────────────────────────────
@@ -869,6 +765,73 @@
 .job-card-checklist-label--done {
   text-decoration: line-through;
   color: var(--text-muted);
+}
+
+// ─── Interview date section (drawer) ─────────────────────────────────────────
+
+.job-card-interview-date-section {
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.job-card-date-section-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.4rem;
+}
+
+.job-card-date-section-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+
+  i { font-size: 0.6rem; color: #d97706; }
+}
+
+.job-card-date-input {
+  width: 100%;
+  font-family: var(--font-sans);
+  font-size: 0.72rem;
+  color: var(--text-primary);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.32rem 0.5rem;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: border-color 0.12s ease;
+
+  &:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 12%, transparent);
+  }
+}
+
+// ─── Rejection date section (drawer) ─────────────────────────────────────────
+
+.job-card-rejection-date-section {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
+
+  i {
+    font-size: 0.62rem;
+    color: var(--danger);
+    opacity: 0.7;
+  }
 }
 
 @keyframes cardEnter {
